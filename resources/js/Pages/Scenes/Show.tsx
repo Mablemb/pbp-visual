@@ -110,7 +110,11 @@ export default function ScenesShow({ scene, isDm, myCharacters }: Props) {
                     key={line.id}
                     src={asset(line.expression.sprite_path) ?? undefined}
                     alt=""
-                    className="absolute bottom-48 left-1/2 z-10 max-h-[60vh] -translate-x-1/2 drop-shadow-2xl"
+                    className={`absolute bottom-48 z-10 max-h-[60vh] drop-shadow-2xl transition-all ${
+                        (line.damage_events?.length ?? 0) > 0
+                            ? 'left-1/4 -translate-x-1/2 max-h-[50vh] sm:max-h-[60vh]'
+                            : 'left-1/2 -translate-x-1/2'
+                    }`}
                 />
             )}
 
@@ -120,7 +124,11 @@ export default function ScenesShow({ scene, isDm, myCharacters }: Props) {
                     key={line.id}
                     src={asset(line.character_expression.sprite_path) ?? undefined}
                     alt=""
-                    className="absolute bottom-48 left-1/2 z-10 max-h-[60vh] -translate-x-1/2 drop-shadow-2xl"
+                    className={`absolute bottom-48 z-10 max-h-[60vh] drop-shadow-2xl transition-all ${
+                        (line.damage_events?.length ?? 0) > 0
+                            ? 'left-1/4 -translate-x-1/2 max-h-[50vh] sm:max-h-[60vh]'
+                            : 'left-1/2 -translate-x-1/2'
+                    }`}
                 />
             )}
             {!isEnd && line?.kind === 'player' && !line.character_expression?.sprite_path && line.character?.portrait_path && (
@@ -128,7 +136,11 @@ export default function ScenesShow({ scene, isDm, myCharacters }: Props) {
                     key={line.id}
                     src={asset(line.character.portrait_path) ?? undefined}
                     alt=""
-                    className="absolute bottom-48 left-1/2 z-10 max-h-[60vh] -translate-x-1/2 rounded-lg drop-shadow-2xl"
+                    className={`absolute bottom-48 z-10 max-h-[60vh] rounded-lg drop-shadow-2xl transition-all ${
+                        (line.damage_events?.length ?? 0) > 0
+                            ? 'left-1/4 -translate-x-1/2 max-h-[50vh] sm:max-h-[60vh]'
+                            : 'left-1/2 -translate-x-1/2'
+                    }`}
                 />
             )}
 
@@ -483,23 +495,29 @@ function ActionsList({
     );
 }
 
+
 function DamageOverlay({ damages }: { damages: DamageEvent[] }) {
     // Group damages by target (character or npc) so a single sprite shows all hits.
+    type Target = {
+        key: string;
+        name: string;
+        portrait_path: string | null | undefined;
+        hp_current: number | undefined;
+        hp_max: number | undefined;
+        hits: DamageEvent[];
+    };
     const byTarget = useMemo(() => {
-        type Entry = {
-            kind: 'character' | 'npc';
-            target: DamageEvent['character'] | DamageEvent['npc'];
-            hits: DamageEvent[];
-        };
-        const map = new Map<string, Entry>();
+        const map = new Map<string, Target>();
         for (const d of damages) {
-            const kind: 'character' | 'npc' = d.npc_id ? 'npc' : 'character';
-            const id = d.npc_id ?? d.character_id ?? 0;
-            const key = `${kind}:${id}`;
+            const t = d.character ?? d.npc;
+            const key = d.character_id ? `c:${d.character_id}` : `n:${d.npc_id}`;
             if (!map.has(key)) {
                 map.set(key, {
-                    kind,
-                    target: kind === 'npc' ? d.npc : d.character,
+                    key,
+                    name: t?.name ?? '?',
+                    portrait_path: t?.portrait_path ?? null,
+                    hp_current: t?.hp_current,
+                    hp_max: t?.hp_max,
                     hits: [],
                 });
             }
@@ -509,45 +527,41 @@ function DamageOverlay({ damages }: { damages: DamageEvent[] }) {
     }, [damages]);
 
     return (
-        <div className="pointer-events-none absolute inset-x-0 top-1/3 z-30 flex justify-center gap-6 px-4">
-            {byTarget.map(({ kind, target, hits }) => {
-                const total = hits.reduce((s, h) => s + h.amount, 0);
-                const primary = hits[0];
+        <div className="pointer-events-none absolute bottom-48 left-1/2 right-0 top-4 z-30 flex flex-col items-center justify-center gap-2 sm:gap-3">
+            {byTarget.map((t) => {
+                const total = t.hits.reduce((s, h) => s + h.amount, 0);
+                const primary = t.hits[0];
                 const meta = DAMAGE_TYPES[primary.damage_type as DamageType];
                 const color = meta?.color ?? '#ef4444';
                 return (
                     <div
-                        key={primary.id}
+                        key={t.key}
                         className="relative flex flex-col items-center"
                         style={{ ['--damage-color' as never]: color }}
                     >
-                        {target?.portrait_path ? (
-                            <img
-                                src={asset(target.portrait_path) ?? undefined}
-                                alt={target.name}
-                                className="animate-damage-flash h-32 w-32 rounded-lg object-cover shadow-2xl sm:h-40 sm:w-40"
-                            />
-                        ) : (
-                            <div
-                                className="animate-damage-flash flex h-32 w-32 items-center justify-center rounded-lg bg-gray-800 text-3xl text-white shadow-2xl sm:h-40 sm:w-40"
-                            >
-                                {target?.name?.[0] ?? '?'}
-                            </div>
-                        )}
                         <div
-                            className="animate-damage-number absolute left-1/2 top-2 text-5xl font-extrabold drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]"
+                            className="animate-damage-number mb-1 flex items-center gap-1 rounded bg-black/70 px-2 py-0.5 text-2xl font-extrabold drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] sm:text-4xl"
                             style={{ color }}
                         >
-                            −{total}
+                            <span className="text-xl sm:text-3xl">{meta?.icon ?? '💥'}</span>
+                            <span>−{total}</span>
                         </div>
-                        <div className="mt-1 rounded bg-black/70 px-2 py-0.5 text-xs font-semibold text-white">
-                            {target?.name ?? '?'}
-                            {kind === 'npc' && (
-                                <span className="ml-1 rounded bg-amber-500/80 px-1 text-[10px]">NPC</span>
-                            )}
-                            {target && target.hp_current != null && target.hp_max != null && (
-                                <span className="ml-1 text-[10px] opacity-80">
-                                    {target.hp_current}/{target.hp_max} HP
+                        {t.portrait_path ? (
+                            <img
+                                src={asset(t.portrait_path) ?? undefined}
+                                alt={t.name}
+                                className="animate-damage-flash h-24 w-24 rounded-lg object-cover shadow-2xl sm:h-40 sm:w-40"
+                            />
+                        ) : (
+                            <div className="animate-damage-flash flex h-24 w-24 items-center justify-center rounded-lg bg-gray-800 text-2xl text-white shadow-2xl sm:h-40 sm:w-40 sm:text-4xl">
+                                {t.name?.[0] ?? '?'}
+                            </div>
+                        )}
+                        <div className="mt-1 max-w-[6rem] truncate rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold text-white sm:max-w-[10rem] sm:text-xs">
+                            {t.name}
+                            {t.hp_max !== undefined && t.hp_current !== undefined && (
+                                <span className="ml-1 text-[9px] opacity-80 sm:text-[10px]">
+                                    {t.hp_current}/{t.hp_max}
                                 </span>
                             )}
                         </div>
