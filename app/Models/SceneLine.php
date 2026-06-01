@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * One ordered line inside a scene. Either narration (no speaker) or an NPC
@@ -59,5 +60,10 @@ class SceneLine extends Model
     public function playerAction(): BelongsTo
     {
         return $this->belongsTo(PlayerAction::class);
+    }
+
+    public function damageEvents(): HasMany
+    {
+        return $this->hasMany(DamageEvent::class);
     }
 }

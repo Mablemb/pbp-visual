@@ -63,6 +63,8 @@ class SceneController extends Controller
             'lines.expression:id,sprite_path,label',
             'lines.character:id,name,portrait_path',
             'lines.characterExpression:id,sprite_path,label,character_id',
+            'lines.damageEvents.character:id,name,portrait_path,hp_current,hp_max',
+            'lines.damageEvents.npc:id,name,portrait_path,hp_current,hp_max',
             'actions' => fn ($q) => $q->latest()->with(['user:id,name', 'character:id,name']),
         ]);
 
@@ -91,6 +93,8 @@ class SceneController extends Controller
             'lines.expression:id,sprite_path,label,npc_id',
             'lines.character:id,name,portrait_path',
             'lines.characterExpression:id,sprite_path,label,character_id',
+            'lines.damageEvents.character:id,name,portrait_path,hp_current,hp_max',
+            'lines.damageEvents.npc:id,name,portrait_path,hp_current,hp_max',
         ]);
 
         $campaign = $scene->campaign;
@@ -116,7 +120,7 @@ class SceneController extends Controller
             'campaign' => $campaign->only('id', 'name'),
             'locations' => $campaign->locations()->get(['id', 'name', 'background_path']),
             'npcs' => $campaign->npcs()->with('expressions:id,npc_id,label,sprite_path,is_default')
-                ->get(['id', 'name']),
+                ->get(['id', 'name', 'portrait_path', 'hp_current', 'hp_max']),
             'characters' => $characters,
             'pendingActions' => $pendingActions,
         ]);

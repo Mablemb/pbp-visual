@@ -4,8 +4,9 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
-import { Character, CharacterExpression, Npc, NpcExpression, PlayerAction, Scene, SceneLine, asset } from '@/types/models';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { Character, CharacterExpression, DamageEvent, Npc, NpcExpression, PlayerAction, Scene, SceneLine, asset } from '@/types/models';
+import { DAMAGE_TYPES, DAMAGE_TYPE_LIST, DamageType } from '@/types/damage';
 
 type CharacterWithExpressions = Pick<Character, 'id' | 'name' | 'portrait_path'> & {
     expressions: CharacterExpression[];
@@ -15,13 +16,18 @@ interface Props {
     scene: Scene & { lines: SceneLine[] };
     campaign: { id: number; name: string };
     locations: { id: number; name: string; background_path: string | null }[];
-    npcs: (Pick<Npc, 'id' | 'name'> & { expressions: NpcExpression[] })[];
+    npcs: (Pick<Npc, 'id' | 'name' | 'portrait_path' | 'hp_current' | 'hp_max'> & { expressions: NpcExpression[] })[];
     characters: CharacterWithExpressions[];
     pendingActions: PlayerAction[];
 }
 
 export default function ScenesEdit({ scene, campaign, locations, npcs, characters, pendingActions }: Props) {
     const [lines, setLines] = useState<SceneLine[]>(scene.lines);
+
+    useEffect(() => {
+        console.log('[ScenesEdit] scene.lines changed', scene.lines.length);
+        setLines(scene.lines);
+    }, [scene.lines]);
 
     return (
         <AuthenticatedLayout
@@ -362,6 +368,7 @@ function LinesEditor({
                                     <div className="mb-1 text-sm italic text-gray-500">Narração</div>
                                 )}
                                 <div className="whitespace-pre-wrap text-sm text-gray-800">{line.body}</div>
+                                <DamagePanel line={line} characters={characters} npcs={npcs} />
                             </div>
                         )}
                         {editingId !== line.id && (
@@ -612,7 +619,11 @@ function AddLineForm({ scene, npcs, characters }: { scene: Scene; npcs: Props['n
                     e.preventDefault();
                     post(route('scenes.lines.store', scene.id), {
                         preserveScroll: true,
-                        onSuccess: () => reset(),
+                        preserveState: false,
+                        onSuccess: () => {
+                            reset();
+                            router.reload({ only: ['scene'] });
+                        },
                     });
                 }}
                 className="space-y-4"
@@ -761,6 +772,205 @@ function AddLineForm({ scene, npcs, characters }: { scene: Scene; npcs: Props['n
                 </div>
                 <PrimaryButton disabled={processing}>Adicionar</PrimaryButton>
             </form>
+        </div>
+    );
+}
+
+
+type DamageTarget = {
+    kind: 'character' | 'npc';
+    id: number;
+    name: string;
+    hp_current?: number;
+    hp_max?: number;
+};
+
+function DamagePanel({
+    line,
+    characters,
+    npcs,
+}: {
+    line: SceneLine;
+    characters: Props['characters'];
+    npcs: Props['npcs'];
+}) {
+    const damages = line.damage_events ?? [];
+    const [open, setOpen] = useState(false);
+
+    const targets: DamageTarget[] = [
+        ...characters.map((c) => ({
+            kind: 'character' as const,
+            id: c.id,
+            name: c.name,
+        })),
+        ...npcs.map((n) => ({
+            kind: 'npc' as const,
+            id: n.id,
+            name: n.name,
+            hp_current: n.hp_current,
+            hp_max: n.hp_max,
+        })),
+    ];
+
+    const firstTarget = targets[0];
+    const { data, setData, post, processing, errors, reset } = useForm<{
+        target: string;
+        amount: string;
+        damage_type: DamageType;
+    }>({
+        target: firstTarget ? `${firstTarget.kind}:${firstTarget.id}` : '',
+        amount: '1',
+        damage_type: 'bludgeoning',
+    });
+
+    function submit(e: FormEvent) {
+        e.preventDefault();
+        const [kind, idStr] = data.target.split(':');
+        if (!kind || !idStr) return;
+        router.post(
+            route('lines.damages.store', line.id),
+            {
+                target_kind: kind,
+                target_id: Number(idStr),
+                amount: Number(data.amount),
+                damage_type: data.damage_type,
+            },
+            {
+                preserveScroll: true,
+                preserveState: false,
+                onSuccess: () => {
+                    reset('amount');
+                    setOpen(false);
+                },
+            },
+        );
+    }
+
+    return (
+        <div className="mt-2">
+            {damages.length > 0 && (
+                <ul className="mb-2 flex flex-wrap gap-1">
+                    {damages.map((d: DamageEvent) => {
+                        const meta = DAMAGE_TYPES[d.damage_type as DamageType];
+                        const targetName = d.character?.name ?? d.npc?.name ?? '?';
+                        const isNpc = !!d.npc_id;
+                        return (
+                            <li
+                                key={d.id}
+                                className="flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs"
+                                style={{ borderColor: meta?.color ?? '#ef4444', color: meta?.color ?? '#ef4444' }}
+                            >
+                                <span>{meta?.icon ?? '⚠️'}</span>
+                                <span className="font-semibold text-gray-800">
+                                    {targetName}
+                                </span>
+                                {isNpc && (
+                                    <span className="rounded bg-amber-100 px-1 text-[10px] font-semibold text-amber-800">NPC</span>
+                                )}
+                                <span className="font-bold">−{d.amount}</span>
+                                <span className="opacity-70">{meta?.label ?? d.damage_type}</span>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (!confirm('Remover este dano? O HP será restaurado.')) return;
+                                        router.delete(route('damages.destroy', d.id), {
+                                            preserveScroll: true,
+                                            preserveState: false,
+                                        });
+                                    }}
+                                    className="ml-1 text-gray-500 hover:text-red-600"
+                                    title="Remover"
+                                >
+                                    ×
+                                </button>
+                            </li>
+                        );
+                    })}
+                </ul>
+            )}
+            {!open ? (
+                <button
+                    type="button"
+                    onClick={() => setOpen(true)}
+                    className="rounded border border-red-300 px-2 py-0.5 text-xs font-semibold text-red-700 hover:bg-red-50"
+                >
+                    + Dano
+                </button>
+            ) : targets.length > 0 ? (
+                <form
+                    onSubmit={submit}
+                    className="flex flex-wrap items-center gap-2 rounded border border-red-200 bg-red-50/50 p-2"
+                >
+                    <select
+                        value={data.target}
+                        onChange={(e) => setData('target', e.target.value)}
+                        required
+                        className="rounded-md border-gray-300 text-xs shadow-sm"
+                    >
+                        {characters.length > 0 && (
+                            <optgroup label="Jogadores">
+                                {characters.map((c) => (
+                                    <option key={`c-${c.id}`} value={`character:${c.id}`}>
+                                        {c.name}
+                                    </option>
+                                ))}
+                            </optgroup>
+                        )}
+                        {npcs.length > 0 && (
+                            <optgroup label="NPCs">
+                                {npcs.map((n) => (
+                                    <option key={`n-${n.id}`} value={`npc:${n.id}`}>
+                                        {n.name}
+                                    </option>
+                                ))}
+                            </optgroup>
+                        )}
+                    </select>
+                    <input
+                        type="number"
+                        min={1}
+                        max={999}
+                        value={data.amount}
+                        onChange={(e) => setData('amount', e.target.value)}
+                        required
+                        className="w-16 rounded-md border-gray-300 text-xs shadow-sm"
+                    />
+                    <select
+                        value={data.damage_type}
+                        onChange={(e) => setData('damage_type', e.target.value as DamageType)}
+                        className="rounded-md border-gray-300 text-xs shadow-sm"
+                    >
+                        {DAMAGE_TYPE_LIST.map((t) => (
+                            <option key={t} value={t}>
+                                {DAMAGE_TYPES[t].icon} {DAMAGE_TYPES[t].label}
+                            </option>
+                        ))}
+                    </select>
+                    <button
+                        type="submit"
+                        disabled={processing}
+                        className="rounded bg-red-600 px-2 py-1 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                    >
+                        Aplicar
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setOpen(false)}
+                        className="text-xs text-gray-600 hover:underline"
+                    >
+                        cancelar
+                    </button>
+                    {(() => {
+                        const e = errors as Record<string, string | undefined>;
+                        const msg = e.target_kind || e.target_id || e.target || e.amount || e.damage_type;
+                        return msg ? (
+                            <span className="text-xs text-red-600">{msg}</span>
+                        ) : null;
+                    })()}
+                </form>
+            ) : (
+                <p className="text-xs text-gray-500">Crie um personagem ou NPC para registrar dano.</p>
+            )}
         </div>
     );
 }

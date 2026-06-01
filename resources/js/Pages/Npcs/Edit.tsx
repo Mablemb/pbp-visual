@@ -3,10 +3,10 @@ import ImageSourcePicker from '@/Components/ImageSourcePicker';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
 import { Npc, asset } from '@/types/models';
 import { PageProps } from '@/types';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { NpcForm, NpcFormData } from './Create';
 
 interface Props {
     campaign: { id: number; name: string };
@@ -16,12 +16,6 @@ interface Props {
 
 export default function NpcsEdit({ campaign, npc, expressionLabels }: Props) {
     const { features } = usePage<PageProps>().props;
-
-    const meta = useForm({
-        name: npc.name,
-        role: npc.role ?? '',
-        description: npc.description ?? '',
-    });
 
     const expr = useForm<{
         label: string;
@@ -44,6 +38,30 @@ export default function NpcsEdit({ campaign, npc, expressionLabels }: Props) {
         path: e.sprite_path,
     }));
 
+    const initial: NpcFormData = {
+        _method: 'put',
+        name: npc.name,
+        role: npc.role ?? '',
+        description: npc.description ?? '',
+        race: npc.race ?? '',
+        class: npc.class ?? '',
+        level: npc.level ?? 1,
+        hp_max: npc.hp_max ?? 10,
+        hp_current: npc.hp_current ?? 10,
+        strength: npc.strength ?? 10,
+        dexterity: npc.dexterity ?? 10,
+        constitution: npc.constitution ?? 10,
+        intelligence: npc.intelligence ?? 10,
+        wisdom: npc.wisdom ?? 10,
+        charisma: npc.charisma ?? 10,
+        bio: npc.bio ?? '',
+        portrait_source: '',
+        portrait: null,
+        portrait_prompt: '',
+        portrait_refs: [],
+        portrait_existing_refs: [],
+    };
+
     return (
         <AuthenticatedLayout
             header={
@@ -51,44 +69,28 @@ export default function NpcsEdit({ campaign, npc, expressionLabels }: Props) {
                     <Link href={route('campaigns.show', campaign.id)} className="text-sm text-indigo-600 hover:underline">
                         ← {campaign.name}
                     </Link>
-                    <h2 className="text-xl font-semibold">/ NPC: {npc.name}</h2>
+                    <h2 className="text-xl font-semibold">
+                        / NPC: {npc.name}
+                        <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 align-middle">
+                            NPC
+                        </span>
+                    </h2>
                 </div>
             }
         >
             <Head title={`NPC: ${npc.name}`} />
             <div className="py-8">
                 <div className="mx-auto max-w-3xl space-y-6 sm:px-6 lg:px-8">
-                    {/* Metadata */}
                     <section className="rounded-lg bg-white p-6 shadow-sm">
                         <h3 className="mb-4 text-lg font-semibold">Dados</h3>
-                        <form
-                            onSubmit={(e) => { e.preventDefault(); meta.put(route('npcs.update', npc.id)); }}
-                            className="space-y-4"
-                        >
-                            <div>
-                                <InputLabel htmlFor="name" value="Nome" />
-                                <TextInput id="name" className="mt-1 block w-full"
-                                    value={meta.data.name}
-                                    onChange={(e) => meta.setData('name', e.target.value)} required />
-                                <InputError message={meta.errors.name} className="mt-1" />
-                            </div>
-                            <div>
-                                <InputLabel htmlFor="role" value="Papel" />
-                                <TextInput id="role" className="mt-1 block w-full"
-                                    value={meta.data.role}
-                                    onChange={(e) => meta.setData('role', e.target.value)} />
-                            </div>
-                            <div>
-                                <InputLabel htmlFor="description" value="Descrição" />
-                                <textarea id="description" rows={3} value={meta.data.description}
-                                    onChange={(e) => meta.setData('description', e.target.value)}
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                            </div>
-                            <PrimaryButton disabled={meta.processing}>Salvar</PrimaryButton>
-                        </form>
+                        <NpcForm
+                            initial={initial}
+                            submit={(form) => form.post(route('npcs.update', npc.id), { forceFormData: true })}
+                            submitLabel="Salvar"
+                            portraitUrl={npc.portrait_path ? asset(npc.portrait_path) : undefined}
+                        />
                     </section>
 
-                    {/* Expressions */}
                     <section className="rounded-lg bg-white p-6 shadow-sm">
                         <h3 className="mb-4 text-lg font-semibold">Expressões / sprites</h3>
 

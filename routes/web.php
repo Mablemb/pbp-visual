@@ -4,6 +4,7 @@ use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\CampaignMemberController;
 use App\Http\Controllers\CharacterController;
 use App\Http\Controllers\CharacterExpressionController;
+use App\Http\Controllers\DamageEventController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\NpcController;
 use App\Http\Controllers\NpcExpressionController;
@@ -61,7 +62,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::scopeBindings()->prefix('lines/{line}')->group(function () {
         Route::put('/', [SceneLineController::class, 'update'])->name('scenes.lines.update');
         Route::delete('/', [SceneLineController::class, 'destroy'])->name('scenes.lines.destroy');
+        Route::post('damages', [DamageEventController::class, 'store'])->name('lines.damages.store');
     });
+    Route::delete('damages/{damage}', [DamageEventController::class, 'destroy'])->name('damages.destroy');
 
     // Player actions: posted on a scene, listed in DM inbox per campaign.
     Route::post('scenes/{scene}/actions', [PlayerActionController::class, 'store'])

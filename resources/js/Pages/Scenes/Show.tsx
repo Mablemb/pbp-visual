@@ -1,6 +1,7 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
-import { CharacterExpression, PlayerAction, Scene, SceneLine, asset } from '@/types/models';
+import { CharacterExpression, DamageEvent, PlayerAction, Scene, SceneLine, asset } from '@/types/models';
+import { DAMAGE_TYPES, DamageType } from '@/types/damage';
 
 type MyCharacter = {
     id: number;
@@ -131,6 +132,11 @@ export default function ScenesShow({ scene, isDm, myCharacters }: Props) {
                 />
             )}
 
+            {/* Damage overlay (portraits flashing with damage type tint + floating numbers) */}
+            {!isEnd && line && (line.damage_events?.length ?? 0) > 0 && (
+                <DamageOverlay key={`dmg-${line.id}`} damages={line.damage_events!} />
+            )}
+
             {/* Dialog box */}
             {!isEnd && line && (
                 <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-6 pt-4 sm:px-8">
@@ -163,6 +169,25 @@ export default function ScenesShow({ scene, isDm, myCharacters }: Props) {
                         <div className="whitespace-pre-wrap text-lg leading-relaxed">
                             {line.body}
                         </div>
+                        {(line.damage_events?.length ?? 0) > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                                {line.damage_events!.map((d) => {
+                                    const meta = DAMAGE_TYPES[d.damage_type as DamageType];
+                                    return (
+                                        <span
+                                            key={d.id}
+                                            className="flex items-center gap-1 rounded-full border px-2 py-0.5 text-sm"
+                                            style={{ borderColor: meta?.color ?? '#ef4444', color: meta?.color ?? '#ef4444' }}
+                                        >
+                                            <span>{meta?.icon ?? '❤️‍🔥'}</span>
+                                            <span className="font-semibold text-white">{d.character?.name ?? d.npc?.name ?? '?'}</span>
+                                            <span className="font-bold">−{d.amount}</span>
+                                            <span className="text-xs opacity-80">{meta?.label ?? d.damage_type}</span>
+                                        </span>
+                                    );
+                                })}
+                            </div>
+                        )}
                         <div className="mt-4 flex justify-end">
                             <span className="animate-pulse text-sm text-white/70">
                                 Clique, espaço ou → para continuar
@@ -454,6 +479,81 @@ function ActionsList({
                     </li>
                 ))}
             </ul>
+        </div>
+    );
+}
+
+function DamageOverlay({ damages }: { damages: DamageEvent[] }) {
+    // Group damages by target (character or npc) so a single sprite shows all hits.
+    const byTarget = useMemo(() => {
+        type Entry = {
+            kind: 'character' | 'npc';
+            target: DamageEvent['character'] | DamageEvent['npc'];
+            hits: DamageEvent[];
+        };
+        const map = new Map<string, Entry>();
+        for (const d of damages) {
+            const kind: 'character' | 'npc' = d.npc_id ? 'npc' : 'character';
+            const id = d.npc_id ?? d.character_id ?? 0;
+            const key = `${kind}:${id}`;
+            if (!map.has(key)) {
+                map.set(key, {
+                    kind,
+                    target: kind === 'npc' ? d.npc : d.character,
+                    hits: [],
+                });
+            }
+            map.get(key)!.hits.push(d);
+        }
+        return Array.from(map.values());
+    }, [damages]);
+
+    return (
+        <div className="pointer-events-none absolute inset-x-0 top-1/3 z-30 flex justify-center gap-6 px-4">
+            {byTarget.map(({ kind, target, hits }) => {
+                const total = hits.reduce((s, h) => s + h.amount, 0);
+                const primary = hits[0];
+                const meta = DAMAGE_TYPES[primary.damage_type as DamageType];
+                const color = meta?.color ?? '#ef4444';
+                return (
+                    <div
+                        key={primary.id}
+                        className="relative flex flex-col items-center"
+                        style={{ ['--damage-color' as never]: color }}
+                    >
+                        {target?.portrait_path ? (
+                            <img
+                                src={asset(target.portrait_path) ?? undefined}
+                                alt={target.name}
+                                className="animate-damage-flash h-32 w-32 rounded-lg object-cover shadow-2xl sm:h-40 sm:w-40"
+                            />
+                        ) : (
+                            <div
+                                className="animate-damage-flash flex h-32 w-32 items-center justify-center rounded-lg bg-gray-800 text-3xl text-white shadow-2xl sm:h-40 sm:w-40"
+                            >
+                                {target?.name?.[0] ?? '?'}
+                            </div>
+                        )}
+                        <div
+                            className="animate-damage-number absolute left-1/2 top-2 text-5xl font-extrabold drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]"
+                            style={{ color }}
+                        >
+                            −{total}
+                        </div>
+                        <div className="mt-1 rounded bg-black/70 px-2 py-0.5 text-xs font-semibold text-white">
+                            {target?.name ?? '?'}
+                            {kind === 'npc' && (
+                                <span className="ml-1 rounded bg-amber-500/80 px-1 text-[10px]">NPC</span>
+                            )}
+                            {target && target.hp_current != null && target.hp_max != null && (
+                                <span className="ml-1 text-[10px] opacity-80">
+                                    {target.hp_current}/{target.hp_max} HP
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                );
+            })}
         </div>
     );
 }

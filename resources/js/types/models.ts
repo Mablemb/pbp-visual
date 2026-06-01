@@ -27,6 +27,19 @@ export interface Npc {
     name: string;
     role: string | null;
     description: string | null;
+    race?: string | null;
+    class?: string | null;
+    level?: number;
+    hp_max?: number;
+    hp_current?: number;
+    strength?: number;
+    dexterity?: number;
+    constitution?: number;
+    intelligence?: number;
+    wisdom?: number;
+    charisma?: number;
+    bio?: string | null;
+    portrait_path?: string | null;
     expressions?: NpcExpression[];
 }
 
@@ -105,6 +118,18 @@ export interface SceneLine {
     expression?: Pick<NpcExpression, 'id' | 'sprite_path' | 'label' | 'npc_id'> | null;
     character?: Pick<Character, 'id' | 'name' | 'portrait_path'> | null;
     character_expression?: Pick<CharacterExpression, 'id' | 'sprite_path' | 'label' | 'character_id'> | null;
+    damage_events?: DamageEvent[];
+}
+
+export interface DamageEvent {
+    id: number;
+    scene_line_id: number;
+    character_id: number | null;
+    npc_id: number | null;
+    amount: number;
+    damage_type: string;
+    character?: Pick<Character, 'id' | 'name' | 'portrait_path' | 'hp_current' | 'hp_max'> | null;
+    npc?: Pick<Npc, 'id' | 'name' | 'portrait_path' | 'hp_current' | 'hp_max'> | null;
 }
 
 export interface PlayerAction {
