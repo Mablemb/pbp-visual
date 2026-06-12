@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import AutoTextarea from '@/Components/AutoTextarea';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -70,9 +71,9 @@ export default function ScenesCreate({ campaign, locations }: Props) {
                         </div>
                         <div>
                             <InputLabel htmlFor="summary" value="Resumo (opcional, só DM vê)" />
-                            <textarea
+                            <AutoTextarea
                                 id="summary"
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                className="mt-1 block w-full"
                                 rows={3}
                                 value={data.summary}
                                 onChange={(e) => setData('summary', e.target.value)}

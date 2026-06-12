@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import AutoTextarea from '@/Components/AutoTextarea';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -27,7 +28,7 @@ export default function CampaignsEdit({ campaign }: Props) {
                         </div>
                         <div>
                             <InputLabel htmlFor="synopsis" value="Sinopse" />
-                            <textarea id="synopsis" rows={5} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" value={data.synopsis} onChange={(e) => setData('synopsis', e.target.value)} />
+                            <AutoTextarea id="synopsis" rows={5} className="mt-1 block w-full" value={data.synopsis} onChange={(e) => setData('synopsis', e.target.value)} />
                             <InputError message={errors.synopsis} className="mt-1" />
                         </div>
                         <PrimaryButton disabled={processing}>Salvar</PrimaryButton>

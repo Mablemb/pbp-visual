@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import AutoTextarea from '@/Components/AutoTextarea';
 import { asset } from '@/types/models';
 
 /**
@@ -119,12 +120,12 @@ export default function ImageSourcePicker({
                         <label className="mb-1 block text-xs font-medium text-gray-600">
                             Prompt
                         </label>
-                        <textarea
+                        <AutoTextarea
                             rows={3}
                             value={(data[promptKey] as string) || ''}
                             onChange={(e) => setData(promptKey, e.target.value)}
                             placeholder="Ex.: taverna medieval iluminada por lampião, atmosfera acolhedora, estilo pintura digital..."
-                            className="block w-full rounded border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            className="block w-full text-sm"
                         />
                         {errors[promptKey] && (
                             <p className="mt-1 text-xs text-red-600">{errors[promptKey]}</p>

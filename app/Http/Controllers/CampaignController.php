@@ -36,7 +36,7 @@ class CampaignController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
+            'name' => ['required', 'string', 'max:250'],
             'synopsis' => ['nullable', 'string', 'max:2000'],
         ]);
 
@@ -80,7 +80,7 @@ class CampaignController extends Controller
 
         $campaign->update($request->validate([
             'name' => ['required', 'string', 'max:120'],
-            'synopsis' => ['nullable', 'string', 'max:2000'],
+            'synopsis' => ['nullable', 'string', 'max:10000'],
         ]));
 
         return redirect()->route('campaigns.show', $campaign);

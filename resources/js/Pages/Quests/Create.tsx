@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import AutoTextarea from '@/Components/AutoTextarea';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -55,9 +56,9 @@ export function Common({ data, setData, errors, statuses }: {
             </div>
             <div>
                 <InputLabel htmlFor="description" value="Descrição" />
-                <textarea id="description" rows={5} value={data.description}
+                <AutoTextarea id="description" rows={5} value={data.description}
                     onChange={(e) => setData('description', e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                    className="mt-1 block w-full" />
                 <InputError message={errors.description} className="mt-1" />
             </div>
             <div>

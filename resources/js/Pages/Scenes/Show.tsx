@@ -1,5 +1,6 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
+import AutoTextarea from '@/Components/AutoTextarea';
 import { CharacterExpression, DamageEvent, PlayerAction, Scene, SceneLine, asset } from '@/types/models';
 import { DAMAGE_TYPES, DamageType } from '@/types/damage';
 
@@ -391,7 +392,7 @@ function ActionForm({
                 </div>
             )}
 
-            <textarea
+            <AutoTextarea
                 value={data.body}
                 onChange={(e) => setData('body', e.target.value)}
                 rows={4}
@@ -401,7 +402,7 @@ function ActionForm({
                         ? 'Ex.: "Não vamos a lugar nenhum sem ouro!"'
                         : 'Ex.: Saco minha adaga e me aproximo da janela…'
                 }
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                className="block w-full"
             />
             {errors.body && <p className="mt-1 text-xs text-red-600">{errors.body}</p>}
 

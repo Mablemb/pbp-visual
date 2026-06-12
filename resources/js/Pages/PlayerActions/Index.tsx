@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import AutoTextarea from '@/Components/AutoTextarea';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import { PlayerAction } from '@/types/models';
@@ -151,12 +152,12 @@ function ActionRow({ action }: { action: PlayerAction }) {
                             Resolvida
                         </label>
                     </div>
-                    <textarea
+                    <AutoTextarea
                         value={data.dm_notes}
                         onChange={(e) => setData('dm_notes', e.target.value)}
                         rows={3}
                         placeholder="Notas do DM (ex.: rolou Furtividade 17, conseguiu se esgueirar...)"
-                        className="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        className="block w-full text-sm"
                     />
                     <button
                         type="submit"

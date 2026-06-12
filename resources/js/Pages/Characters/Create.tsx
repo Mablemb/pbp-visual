@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import AutoTextarea from '@/Components/AutoTextarea';
 import ImageSourcePicker from '@/Components/ImageSourcePicker';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -81,11 +82,11 @@ export function CharacterForm({
 
             <div>
                 <InputLabel htmlFor="bio" value="Biografia" />
-                <textarea
+                <AutoTextarea
                     id="bio" rows={4}
                     value={data.bio}
                     onChange={(e) => setData('bio', e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    className="mt-1 block w-full"
                 />
                 <InputError message={errors.bio} className="mt-1" />
             </div>

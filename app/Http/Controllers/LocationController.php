@@ -87,7 +87,7 @@ class LocationController extends Controller
     {
         $request->validate([
             'name' => ['required', 'string', 'max:120'],
-            'description' => ['nullable', 'string', 'max:2000'],
+            'description' => ['nullable', 'string', 'max:5000'],
             ...ImageInput::rules('background'),
         ]);
 

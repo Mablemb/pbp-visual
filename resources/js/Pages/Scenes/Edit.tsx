@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import AutoTextarea from '@/Components/AutoTextarea';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -236,9 +237,9 @@ function Metadata({
                 </div>
                 <div>
                     <InputLabel htmlFor="summary" value="Resumo (DM)" />
-                    <textarea
+                    <AutoTextarea
                         id="summary"
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                        className="mt-1 block w-full"
                         rows={2}
                         value={data.summary}
                         onChange={(e) => setData('summary', e.target.value)}
@@ -560,12 +561,12 @@ function EditLineForm({
                 </div>
             )}
 
-            <textarea
+            <AutoTextarea
                 value={data.body}
                 onChange={(e) => setData('body', e.target.value)}
                 rows={3}
                 required
-                className="block w-full rounded-md border-gray-300 text-sm shadow-sm"
+                className="block w-full text-sm"
             />
             {errors.body && <p className="text-xs text-red-600">{errors.body}</p>}
 
@@ -760,9 +761,9 @@ function AddLineForm({ scene, npcs, characters }: { scene: Scene; npcs: Props['n
                 )}
                 <div>
                     <InputLabel htmlFor="body" value="Texto" />
-                    <textarea
+                    <AutoTextarea
                         id="body"
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                        className="mt-1 block w-full"
                         rows={3}
                         value={data.body}
                         onChange={(e) => setData('body', e.target.value)}

@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import AutoTextarea from '@/Components/AutoTextarea';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -40,10 +41,10 @@ export default function CampaignsCreate() {
 
                         <div>
                             <InputLabel htmlFor="synopsis" value="Sinopse" />
-                            <textarea
+                            <AutoTextarea
                                 id="synopsis"
                                 rows={5}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                className="mt-1 block w-full"
                                 value={data.synopsis}
                                 onChange={(e) => setData('synopsis', e.target.value)}
                             />
