@@ -16,7 +16,7 @@ export default function CampaignsIndex({ owned, playing }: Props) {
             <Head title="Campanhas" />
 
             <div className="py-8">
-                <div className="mx-auto max-w-5xl space-y-8 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl space-y-8 sm:px-6 lg:px-8">
                     <section className="rounded-lg bg-white p-6 shadow-sm">
                         <div className="mb-4 flex items-center justify-between">
                             <h3 className="text-lg font-semibold">Suas campanhas (DM)</h3>

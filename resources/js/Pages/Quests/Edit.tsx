@@ -30,7 +30,7 @@ export default function QuestsEdit({ campaign, quest, statuses }: Props) {
         >
             <Head title="Editar missão" />
             <div className="py-8">
-                <div className="mx-auto max-w-2xl rounded-lg bg-white p-6 shadow-sm sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-4xl rounded-lg bg-white p-6 shadow-sm sm:px-6 lg:px-8">
                     <form onSubmit={(e) => { e.preventDefault(); put(route('quests.update', quest.id)); }} className="space-y-4">
                         <Common data={data} setData={setData} errors={errors} statuses={statuses} />
                         <PrimaryButton disabled={processing}>Salvar</PrimaryButton>

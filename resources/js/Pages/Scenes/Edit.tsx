@@ -54,7 +54,7 @@ export default function ScenesEdit({ scene, campaign, locations, npcs, character
         >
             <Head title={`Cena: ${scene.title}`} />
             <div className="space-y-6 py-8">
-                <div className="mx-auto max-w-4xl space-y-6">
+                <div className="mx-auto max-w-6xl space-y-6">
                     <Metadata scene={scene} locations={locations} />
                     <PendingActionsPanel scene={scene} actions={pendingActions} />
                     <LinesEditor

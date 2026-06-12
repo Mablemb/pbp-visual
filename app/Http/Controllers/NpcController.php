@@ -76,6 +76,18 @@ class NpcController extends Controller
         return redirect()->route('npcs.edit', $npc);
     }
 
+    public function destroyPortrait(Npc $npc): RedirectResponse
+    {
+        $this->authorize('manage', $npc->campaign);
+
+        if ($npc->portrait_path) {
+            Storage::disk('public')->delete($npc->portrait_path);
+            $npc->update(['portrait_path' => null]);
+        }
+
+        return back();
+    }
+
     public function destroy(Npc $npc): RedirectResponse
     {
         $this->authorize('manage', $npc->campaign);

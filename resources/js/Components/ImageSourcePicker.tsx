@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import AutoTextarea from '@/Components/AutoTextarea';
+import DeleteImageButton from '@/Components/DeleteImageButton';
 import { asset } from '@/types/models';
 
 /**
@@ -32,6 +33,8 @@ interface Props {
     existingRefs?: ExistingRef[];
     /** Optional preview of the current persisted image. */
     currentPreview?: string | null;
+    /** Called when the user confirms deleting the current image. */
+    onDelete?: () => void;
 }
 
 export default function ImageSourcePicker({
@@ -43,6 +46,7 @@ export default function ImageSourcePicker({
     aiDisabled = false,
     existingRefs = [],
     currentPreview,
+    onDelete,
 }: Props) {
     const sourceKey = `${field}_source`;
     const promptKey = `${field}_prompt`;
@@ -77,11 +81,19 @@ export default function ImageSourcePicker({
             <div className="mb-3 flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-700">{label}</span>
                 {currentPreview && (
-                    <img
-                        src={currentPreview}
-                        alt="atual"
-                        className="h-10 w-10 rounded object-cover"
-                    />
+                    <div className="group relative">
+                        <img
+                            src={currentPreview}
+                            alt="atual"
+                            className="h-16 w-16 rounded object-cover"
+                        />
+                        {onDelete && (
+                            <DeleteImageButton
+                                onConfirm={onDelete}
+                                message="Remover esta imagem?"
+                            />
+                        )}
+                    </div>
                 )}
             </div>
 

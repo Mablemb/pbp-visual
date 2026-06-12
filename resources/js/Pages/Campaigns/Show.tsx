@@ -1,11 +1,12 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import DetailModal from '@/Components/DetailModal';
+import MarkdownContent from '@/Components/MarkdownContent';
 import ZoomableImage from '@/Components/ZoomableImage';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
-import { Campaign, Npc, asset } from '@/types/models';
+import { Campaign, Npc, Quest, asset } from '@/types/models';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
@@ -18,9 +19,11 @@ export default function CampaignsShow({ campaign, isDm }: Props) {
     const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
     const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
     const [selectedNpcId, setSelectedNpcId] = useState<number | null>(null);
+    const [selectedQuestId, setSelectedQuestId] = useState<number | null>(null);
 
     const selectedLocation = (campaign.locations ?? []).find((location) => location.id === selectedLocationId) ?? null;
     const selectedNpc = (campaign.npcs ?? []).find((npc) => npc.id === selectedNpcId) ?? null;
+    const selectedQuest = (campaign.quests ?? []).find((q) => q.id === selectedQuestId) ?? null;
 
     return (
         <AuthenticatedLayout
@@ -49,7 +52,7 @@ export default function CampaignsShow({ campaign, isDm }: Props) {
             <Head title={campaign.name} />
 
             <div className="py-8">
-                <div className="mx-auto max-w-6xl space-y-6 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
                     {campaign.synopsis && (
                         <section className="rounded-lg bg-white shadow-sm">
                             <button
@@ -70,9 +73,11 @@ export default function CampaignsShow({ campaign, isDm }: Props) {
                                 </svg>
                             </button>
                             <div className="px-6 pb-6">
-                                <p className={`text-gray-700 ${isSynopsisExpanded ? 'whitespace-pre-line' : 'line-clamp-2'}`}>
-                                    {campaign.synopsis}
-                                </p>
+                                {isSynopsisExpanded ? (
+                                    <MarkdownContent>{campaign.synopsis}</MarkdownContent>
+                                ) : (
+                                    <p className="line-clamp-2 text-sm text-gray-700">{campaign.synopsis}</p>
+                                )}
                             </div>
                         </section>
                     )}
@@ -203,6 +208,8 @@ export default function CampaignsShow({ campaign, isDm }: Props) {
                         editHref={(q) => route('quests.edit', q.id)}
                         deleteRoute={(q) => route('quests.destroy', q.id)}
                         canEdit={isDm}
+                        onSelect={(id) => setSelectedQuestId((current) => current === id ? null : id)}
+                        selectedId={selectedQuestId}
                         render={(q) => (
                             <div>
                                 <div className="font-medium">
@@ -275,9 +282,9 @@ export default function CampaignsShow({ campaign, isDm }: Props) {
                                 Sem imagem para este cenário.
                             </div>
                         )}
-                        <p className="whitespace-pre-line text-sm text-gray-700">
-                            {selectedLocation.description || 'Este cenário ainda não possui descrição.'}
-                        </p>
+                        <MarkdownContent fallback="Este cenário ainda não possui descrição.">
+                            {selectedLocation.description}
+                        </MarkdownContent>
                     </div>
                 )}
             </DetailModal>
@@ -306,10 +313,25 @@ export default function CampaignsShow({ campaign, isDm }: Props) {
                                     {selectedNpc.role}
                                 </p>
                             )}
-                            <p className="whitespace-pre-line text-sm text-gray-700">
-                                {selectedNpc.description || 'Este NPC ainda não possui descrição.'}
-                            </p>
+                            <MarkdownContent fallback="Este NPC ainda não possui descrição.">
+                                {selectedNpc.description}
+                            </MarkdownContent>
                         </div>
+                    </div>
+                )}
+            </DetailModal>
+
+            <DetailModal
+                show={selectedQuest !== null}
+                title={selectedQuest?.title ?? ''}
+                onClose={() => setSelectedQuestId(null)}
+            >
+                {selectedQuest && (
+                    <div className="space-y-3">
+                        <span className={statusBadge(selectedQuest.status)}>{selectedQuest.status}</span>
+                        <MarkdownContent fallback="Esta missão ainda não possui descrição.">
+                            {selectedQuest.description}
+                        </MarkdownContent>
                     </div>
                 )}
             </DetailModal>

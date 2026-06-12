@@ -19,7 +19,7 @@ export default function CampaignsCreate() {
             <Head title="Nova campanha" />
 
             <div className="py-8">
-                <div className="mx-auto max-w-2xl rounded-lg bg-white p-6 shadow-sm sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-4xl rounded-lg bg-white p-6 shadow-sm sm:px-6 lg:px-8">
                     <form
                         onSubmit={(e) => {
                             e.preventDefault();

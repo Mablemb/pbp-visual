@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import AutoTextarea from '@/Components/AutoTextarea';
+import MarkdownEditor from '@/Components/MarkdownEditor';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -29,7 +29,7 @@ export default function QuestsCreate({ campaign, statuses }: Props) {
         >
             <Head title="Nova missão" />
             <div className="py-8">
-                <div className="mx-auto max-w-2xl rounded-lg bg-white p-6 shadow-sm sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-4xl rounded-lg bg-white p-6 shadow-sm sm:px-6 lg:px-8">
                     <form onSubmit={(e) => { e.preventDefault(); post(route('campaigns.quests.store', campaign.id)); }} className="space-y-4">
                         <Common data={data} setData={setData} errors={errors} statuses={statuses} />
                         <PrimaryButton disabled={processing}>Criar</PrimaryButton>
@@ -56,9 +56,14 @@ export function Common({ data, setData, errors, statuses }: {
             </div>
             <div>
                 <InputLabel htmlFor="description" value="Descrição" />
-                <AutoTextarea id="description" rows={5} value={data.description}
-                    onChange={(e) => setData('description', e.target.value)}
-                    className="mt-1 block w-full" />
+                <div className="mt-1">
+                    <MarkdownEditor
+                        id="description"
+                        value={data.description}
+                        onChange={(v) => setData('description', v)}
+                        placeholder="Descreva a missão..."
+                    />
+                </div>
                 <InputError message={errors.description} className="mt-1" />
             </div>
             <div>

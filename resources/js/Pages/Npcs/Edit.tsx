@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import DeleteImageButton from '@/Components/DeleteImageButton';
 import ImageSourcePicker from '@/Components/ImageSourcePicker';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -80,7 +81,8 @@ export default function NpcsEdit({ campaign, npc, expressionLabels }: Props) {
         >
             <Head title={`NPC: ${npc.name}`} />
             <div className="py-8">
-                <div className="mx-auto max-w-3xl space-y-6 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                     <section className="rounded-lg bg-white p-6 shadow-sm">
                         <h3 className="mb-4 text-lg font-semibold">Dados</h3>
                         <NpcForm
@@ -88,6 +90,10 @@ export default function NpcsEdit({ campaign, npc, expressionLabels }: Props) {
                             submit={(form) => form.post(route('npcs.update', npc.id), { forceFormData: true })}
                             submitLabel="Salvar"
                             portraitUrl={npc.portrait_path ? asset(npc.portrait_path) : undefined}
+                            onPortraitDelete={npc.portrait_path ? () => router.delete(
+                                route('npcs.portrait.destroy', npc.id),
+                                { preserveScroll: true },
+                            ) : undefined}
                         />
                     </section>
 
@@ -101,12 +107,21 @@ export default function NpcsEdit({ campaign, npc, expressionLabels }: Props) {
                                 </p>
                             )}
                             {(npc.expressions ?? []).map((e) => (
-                                <div key={e.id} className={`rounded border p-2 text-center ${e.is_default ? 'border-amber-400 ring-2 ring-amber-200' : ''}`}>
-                                    <img
-                                        src={asset(e.sprite_path)}
-                                        alt={e.label}
-                                        className="mx-auto h-32 w-32 rounded object-cover"
-                                    />
+                                <div key={e.id} className={`group rounded border p-2 text-center ${e.is_default ? 'border-amber-400 ring-2 ring-amber-200' : ''}`}>
+                                    <div className="relative">
+                                        <img
+                                            src={asset(e.sprite_path)}
+                                            alt={e.label}
+                                            className="mx-auto h-32 w-32 rounded object-cover"
+                                        />
+                                        <DeleteImageButton
+                                            onConfirm={() => router.delete(
+                                                route('npcs.expressions.destroy', [npc.id, e.id]),
+                                                { preserveScroll: true },
+                                            )}
+                                            message={`Remover expressão "${e.label}"?`}
+                                        />
+                                    </div>
                                     <div className="mt-1 text-xs font-medium">{e.label}</div>
                                     <label className="mt-1 flex items-center justify-center gap-1 text-[11px] text-gray-700">
                                         <input
@@ -124,17 +139,6 @@ export default function NpcsEdit({ campaign, npc, expressionLabels }: Props) {
                                         />
                                         padrão
                                     </label>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            if (confirm(`Remover expressão "${e.label}"?`)) {
-                                                router.delete(route('npcs.expressions.destroy', [npc.id, e.id]), { preserveScroll: true });
-                                            }
-                                        }}
-                                        className="mt-1 text-[11px] text-red-600 hover:underline"
-                                    >
-                                        remover
-                                    </button>
                                 </div>
                             ))}
                         </div>
@@ -184,6 +188,7 @@ export default function NpcsEdit({ campaign, npc, expressionLabels }: Props) {
                             <PrimaryButton disabled={expr.processing}>+ Adicionar expressão</PrimaryButton>
                         </form>
                     </section>
+                </div>
                 </div>
             </div>
         </AuthenticatedLayout>

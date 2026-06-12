@@ -78,6 +78,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // NPC expression sub-resource (sprite per emotion).
     Route::scopeBindings()->prefix('npcs/{npc}')->group(function () {
+        Route::delete('portrait', [NpcController::class, 'destroyPortrait'])->name('npcs.portrait.destroy');
         Route::post('expressions', [NpcExpressionController::class, 'store'])->name('npcs.expressions.store');
         Route::patch('expressions/{expression}/default', [NpcExpressionController::class, 'setDefault'])->name('npcs.expressions.default');
         Route::delete('expressions/{expression}', [NpcExpressionController::class, 'destroy'])->name('npcs.expressions.destroy');
@@ -85,10 +86,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Character expression sub-resource (sprite per emotion).
     Route::scopeBindings()->prefix('characters/{character}')->group(function () {
+        Route::delete('portrait', [CharacterController::class, 'destroyPortrait'])->name('characters.portrait.destroy');
         Route::post('expressions', [CharacterExpressionController::class, 'store'])->name('characters.expressions.store');
         Route::patch('expressions/{expression}/default', [CharacterExpressionController::class, 'setDefault'])->name('characters.expressions.default');
         Route::delete('expressions/{expression}', [CharacterExpressionController::class, 'destroy'])->name('characters.expressions.destroy');
     });
+
+    // Location background delete.
+    Route::delete('locations/{location}/background', [LocationController::class, 'destroyBackground'])->name('locations.background.destroy');
 });
 
 Route::middleware('auth')->group(function () {

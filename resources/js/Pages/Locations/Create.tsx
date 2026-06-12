@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import AutoTextarea from '@/Components/AutoTextarea';
+import MarkdownEditor from '@/Components/MarkdownEditor';
 import ImageSourcePicker from '@/Components/ImageSourcePicker';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -58,9 +58,11 @@ export default function LocationsCreate({ campaign }: Props) {
 export function LocationFields({
     form,
     currentBgUrl,
+    onBgDelete,
 }: {
     form: ReturnType<typeof useForm<LocationFormData>>;
     currentBgUrl?: string | null;
+    onBgDelete?: () => void;
 }) {
     const { data, setData, errors, progress } = form;
     const { features } = usePage<PageProps>().props;
@@ -80,13 +82,14 @@ export function LocationFields({
             </div>
             <div>
                 <InputLabel htmlFor="description" value="Descrição" />
-                <AutoTextarea
-                    id="description"
-                    rows={4}
-                    value={data.description}
-                    onChange={(e) => setData('description', e.target.value)}
-                    className="mt-1 block w-full"
-                />
+                <div className="mt-1">
+                    <MarkdownEditor
+                        id="description"
+                        value={data.description}
+                        onChange={(v) => setData('description', v)}
+                        placeholder="Descreva o cenário..."
+                    />
+                </div>
                 <InputError message={errors.description} className="mt-1" />
             </div>
             <ImageSourcePicker
@@ -97,6 +100,7 @@ export function LocationFields({
                 errors={errors as Record<string, string | undefined>}
                 aiDisabled={!features.ai_images}
                 currentPreview={currentBgUrl ?? undefined}
+                onDelete={onBgDelete}
             />
             {progress && (
                 <progress value={progress.percentage} max={100} className="w-full" />
@@ -119,7 +123,7 @@ function Header({ campaign, title }: { campaign: { id: number; name: string }; t
 function FormShell({ children }: { children: React.ReactNode }) {
     return (
         <div className="py-8">
-            <div className="mx-auto max-w-2xl rounded-lg bg-white p-6 shadow-sm sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-4xl rounded-lg bg-white p-6 shadow-sm sm:px-6 lg:px-8">
                 {children}
             </div>
         </div>

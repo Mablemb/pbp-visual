@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import AutoTextarea from '@/Components/AutoTextarea';
+import MarkdownEditor from '@/Components/MarkdownEditor';
 import ImageSourcePicker from '@/Components/ImageSourcePicker';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -32,11 +32,13 @@ export function NpcForm({
     submit,
     portraitUrl,
     submitLabel,
+    onPortraitDelete,
 }: {
     initial: NpcFormData;
     submit: (form: ReturnType<typeof useForm<NpcFormData>>) => void;
     portraitUrl?: string;
     submitLabel: string;
+    onPortraitDelete?: () => void;
 }) {
     const form = useForm<NpcFormData>(initial);
     const { data, setData, errors, processing, progress } = form;
@@ -85,23 +87,28 @@ export function NpcForm({
 
             <div>
                 <InputLabel htmlFor="description" value="Descrição curta" />
-                <AutoTextarea
-                    id="description" rows={2}
-                    value={data.description}
-                    onChange={(e) => setData('description', e.target.value)}
-                    className="mt-1 block w-full"
-                />
+                <div className="mt-1">
+                    <MarkdownEditor
+                        id="description"
+                        value={data.description}
+                        onChange={(v) => setData('description', v)}
+                        placeholder="Descrição que aparece na ficha da campanha..."
+                        minHeight="80px"
+                    />
+                </div>
                 <InputError message={errors.description} className="mt-1" />
             </div>
 
             <div>
                 <InputLabel htmlFor="bio" value="Biografia / notas" />
-                <AutoTextarea
-                    id="bio" rows={4}
-                    value={data.bio}
-                    onChange={(e) => setData('bio', e.target.value)}
-                    className="mt-1 block w-full"
-                />
+                <div className="mt-1">
+                    <MarkdownEditor
+                        id="bio"
+                        value={data.bio}
+                        onChange={(v) => setData('bio', v)}
+                        placeholder="Biografia, notas e segredos do NPC..."
+                    />
+                </div>
                 <InputError message={errors.bio} className="mt-1" />
             </div>
 
@@ -113,6 +120,7 @@ export function NpcForm({
                 errors={errors as Record<string, string | undefined>}
                 aiDisabled={!features.ai_images}
                 currentPreview={portraitUrl ?? null}
+                onDelete={onPortraitDelete}
             />
             {progress && <progress value={progress.percentage} max={100} className="w-full" />}
 
@@ -154,7 +162,7 @@ export default function NpcsCreate({ campaign }: CreateProps) {
         >
             <Head title="Novo NPC" />
             <div className="py-8">
-                <div className="mx-auto max-w-3xl rounded-lg bg-white p-6 shadow-sm sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-5xl rounded-lg bg-white p-6 shadow-sm sm:px-6 lg:px-8">
                     <p className="mb-4 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
                         NPC
                     </p>

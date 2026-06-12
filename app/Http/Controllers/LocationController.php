@@ -70,6 +70,18 @@ class LocationController extends Controller
         return redirect()->route('campaigns.show', $location->campaign_id);
     }
 
+    public function destroyBackground(Location $location): RedirectResponse
+    {
+        $this->authorize('manage', $location->campaign);
+
+        if ($location->background_path) {
+            Storage::disk('public')->delete($location->background_path);
+            $location->update(['background_path' => null]);
+        }
+
+        return back();
+    }
+
     public function destroy(Location $location): RedirectResponse
     {
         $this->authorize('manage', $location->campaign);

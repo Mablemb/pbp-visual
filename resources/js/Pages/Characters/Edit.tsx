@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import DeleteImageButton from '@/Components/DeleteImageButton';
 import ImageSourcePicker from '@/Components/ImageSourcePicker';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -28,7 +29,8 @@ export default function CharactersEdit({ campaign, character, expressionLabels }
         >
             <Head title={character.name} />
             <div className="py-8">
-                <div className="mx-auto max-w-3xl space-y-6 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                     <section className="rounded-lg bg-white p-6 shadow-sm">
                         <CharacterForm
                             initial={{
@@ -55,10 +57,15 @@ export default function CharactersEdit({ campaign, character, expressionLabels }
                             portraitUrl={asset(character.portrait_path)}
                             submit={(form) => form.post(route('characters.update', character.id), { forceFormData: true })}
                             submitLabel="Salvar"
+                            onPortraitDelete={character.portrait_path ? () => router.delete(
+                                route('characters.portrait.destroy', character.id),
+                                { preserveScroll: true },
+                            ) : undefined}
                         />
                     </section>
 
                     <ExpressionsPanel character={character} expressionLabels={expressionLabels} />
+                </div>
                 </div>
             </div>
         </AuthenticatedLayout>
@@ -105,15 +112,24 @@ function ExpressionsPanel({ character, expressionLabels }: { character: Characte
                 {(character.expressions ?? []).map((e) => (
                     <div
                         key={e.id}
-                        className={`rounded border p-2 text-center ${
+                        className={`group rounded border p-2 text-center ${
                             e.is_default ? 'border-amber-400 ring-2 ring-amber-200' : ''
                         }`}
                     >
-                        <img
-                            src={asset(e.sprite_path) ?? undefined}
-                            alt={e.label}
-                            className="mx-auto h-32 w-32 rounded object-cover"
-                        />
+                        <div className="relative">
+                            <img
+                                src={asset(e.sprite_path) ?? undefined}
+                                alt={e.label}
+                                className="mx-auto h-32 w-32 rounded object-cover"
+                            />
+                            <DeleteImageButton
+                                onConfirm={() => router.delete(
+                                    route('characters.expressions.destroy', [character.id, e.id]),
+                                    { preserveScroll: true },
+                                )}
+                                message={`Remover expressão "${e.label}"?`}
+                            />
+                        </div>
                         <div className="mt-1 text-xs font-medium">{e.label}</div>
                         <label className="mt-1 flex items-center justify-center gap-1 text-[11px] text-gray-700">
                             <input
@@ -131,20 +147,6 @@ function ExpressionsPanel({ character, expressionLabels }: { character: Characte
                             />
                             padrão
                         </label>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                if (confirm(`Remover expressão "${e.label}"?`)) {
-                                    router.delete(
-                                        route('characters.expressions.destroy', [character.id, e.id]),
-                                        { preserveScroll: true },
-                                    );
-                                }
-                            }}
-                            className="mt-1 text-[11px] text-red-600 hover:underline"
-                        >
-                            remover
-                        </button>
                     </div>
                 ))}
             </div>

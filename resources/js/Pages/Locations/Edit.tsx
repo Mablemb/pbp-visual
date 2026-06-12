@@ -1,7 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { Location, asset } from '@/types/models';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { LocationFields, LocationFormData } from './Create';
 
 interface Props {
@@ -35,7 +35,7 @@ export default function LocationsEdit({ campaign, location }: Props) {
         >
             <Head title="Editar cenário" />
             <div className="py-8">
-                <div className="mx-auto max-w-2xl rounded-lg bg-white p-6 shadow-sm sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-4xl rounded-lg bg-white p-6 shadow-sm sm:px-6 lg:px-8">
                     <form
                         onSubmit={(e) => {
                             e.preventDefault();
@@ -47,6 +47,10 @@ export default function LocationsEdit({ campaign, location }: Props) {
                         <LocationFields
                             form={form as never}
                             currentBgUrl={asset(location.background_path) ?? null}
+                            onBgDelete={location.background_path ? () => router.delete(
+                                route('locations.background.destroy', location.id),
+                                { preserveScroll: true },
+                            ) : undefined}
                         />
                         <PrimaryButton disabled={form.processing}>Salvar</PrimaryButton>
                     </form>

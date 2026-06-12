@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import AutoTextarea from '@/Components/AutoTextarea';
+import MarkdownEditor from '@/Components/MarkdownEditor';
 import ImageSourcePicker from '@/Components/ImageSourcePicker';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -32,11 +32,13 @@ export function CharacterForm({
     submit,
     portraitUrl,
     submitLabel,
+    onPortraitDelete,
 }: {
     initial: CharFormData;
     submit: (form: ReturnType<typeof useForm<CharFormData>>) => void;
     portraitUrl?: string;
     submitLabel: string;
+    onPortraitDelete?: () => void;
 }) {
     const form = useForm<CharFormData>(initial);
     const { data, setData, errors, processing, progress } = form;
@@ -82,12 +84,14 @@ export function CharacterForm({
 
             <div>
                 <InputLabel htmlFor="bio" value="Biografia" />
-                <AutoTextarea
-                    id="bio" rows={4}
-                    value={data.bio}
-                    onChange={(e) => setData('bio', e.target.value)}
-                    className="mt-1 block w-full"
-                />
+                <div className="mt-1">
+                    <MarkdownEditor
+                        id="bio"
+                        value={data.bio}
+                        onChange={(v) => setData('bio', v)}
+                        placeholder="Escreva a biografia do personagem..."
+                    />
+                </div>
                 <InputError message={errors.bio} className="mt-1" />
             </div>
 
@@ -99,6 +103,7 @@ export function CharacterForm({
                 errors={errors as Record<string, string | undefined>}
                 aiDisabled={!features.ai_images}
                 currentPreview={portraitUrl ?? null}
+                onDelete={onPortraitDelete}
             />
             {progress && <progress value={progress.percentage} max={100} className="w-full" />}
 
@@ -140,7 +145,7 @@ export default function CharactersCreate({ campaign }: CreateProps) {
         >
             <Head title="Novo personagem" />
             <div className="py-8">
-                <div className="mx-auto max-w-3xl rounded-lg bg-white p-6 shadow-sm sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-5xl rounded-lg bg-white p-6 shadow-sm sm:px-6 lg:px-8">
                     <CharacterForm
                         initial={{
                             name: '', race: '', class: '', level: 1,

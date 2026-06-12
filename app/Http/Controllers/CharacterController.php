@@ -85,6 +85,23 @@ class CharacterController extends Controller
         return redirect()->route('characters.edit', $character);
     }
 
+    public function destroyPortrait(Request $request, Character $character): RedirectResponse
+    {
+        $this->authorize('view', $character->campaign);
+        abort_unless(
+            $character->user_id === $request->user()->id
+            || $character->campaign->dm_user_id === $request->user()->id,
+            403
+        );
+
+        if ($character->portrait_path) {
+            Storage::disk('public')->delete($character->portrait_path);
+            $character->update(['portrait_path' => null]);
+        }
+
+        return back();
+    }
+
     public function destroy(Request $request, Character $character): RedirectResponse
     {
         abort_unless(
