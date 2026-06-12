@@ -53,7 +53,7 @@ class CampaignController extends Controller
             'dm:id,name,email',
             'players:id,name,email',
             'locations:id,campaign_id,name,description,background_path',
-            'npcs:id,campaign_id,name,role,description',
+            'npcs:id,campaign_id,name,role,description,portrait_path',
             'npcs.expressions:id,npc_id,label,sprite_path,is_default',
             'characters:id,campaign_id,user_id,name,race,class,level,hp_current,hp_max,portrait_path',
             'characters.user:id,name',
