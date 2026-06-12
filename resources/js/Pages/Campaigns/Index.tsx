@@ -1,6 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import CollapsibleText from '@/Components/CollapsibleText';
 import { CampaignSummary } from '@/types/models';
 import { Head, Link } from '@inertiajs/react';
+import { useState } from 'react';
 
 interface Props {
     owned: CampaignSummary[];
@@ -40,6 +42,16 @@ export default function CampaignsIndex({ owned, playing }: Props) {
 }
 
 function CampaignList({ items, emptyMsg }: { items: CampaignSummary[]; emptyMsg: string }) {
+    const [expandedCampaignIds, setExpandedCampaignIds] = useState<number[]>([]);
+
+    function toggleCampaign(id: number) {
+        setExpandedCampaignIds((current) =>
+            current.includes(id)
+                ? current.filter((campaignId) => campaignId !== id)
+                : [...current, id],
+        );
+    }
+
     if (items.length === 0) {
         return <p className="text-sm text-gray-500">{emptyMsg}</p>;
     }
@@ -47,10 +59,31 @@ function CampaignList({ items, emptyMsg }: { items: CampaignSummary[]; emptyMsg:
         <ul className="divide-y">
             {items.map((c) => (
                 <li key={c.id} className="py-3">
-                    <Link href={route('campaigns.show', c.id)} className="block hover:bg-gray-50">
-                        <p className="font-medium text-indigo-700">{c.name}</p>
-                        {c.synopsis && <p className="text-sm text-gray-600">{c.synopsis}</p>}
-                    </Link>
+                    <div className="flex items-start justify-between gap-4 rounded-md px-2 py-2 hover:bg-gray-50">
+                        <div className="min-w-0 flex-1">
+                            <Link
+                                href={route('campaigns.show', c.id)}
+                                className="block font-medium text-indigo-700 hover:underline"
+                            >
+                                {c.name}
+                            </Link>
+                            {c.synopsis && (
+                                <div className="mt-1">
+                                    <CollapsibleText
+                                        text={c.synopsis}
+                                        expanded={expandedCampaignIds.includes(c.id)}
+                                        onToggle={() => toggleCampaign(c.id)}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                        <Link
+                            href={route('campaigns.show', c.id)}
+                            className="shrink-0 text-sm font-medium text-indigo-600 hover:underline"
+                        >
+                            Abrir
+                        </Link>
+                    </div>
                 </li>
             ))}
         </ul>

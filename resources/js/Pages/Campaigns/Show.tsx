@@ -1,10 +1,14 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import CollapsibleText from '@/Components/CollapsibleText';
+import DetailModal from '@/Components/DetailModal';
+import ZoomableImage from '@/Components/ZoomableImage';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
-import { Campaign, asset } from '@/types/models';
+import { Campaign, Npc, asset } from '@/types/models';
 import { Head, Link, router, useForm } from '@inertiajs/react';
+import { useState } from 'react';
 
 interface Props {
     campaign: Campaign;
@@ -12,6 +16,13 @@ interface Props {
 }
 
 export default function CampaignsShow({ campaign, isDm }: Props) {
+    const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
+    const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
+    const [selectedNpcId, setSelectedNpcId] = useState<number | null>(null);
+
+    const selectedLocation = (campaign.locations ?? []).find((location) => location.id === selectedLocationId) ?? null;
+    const selectedNpc = (campaign.npcs ?? []).find((npc) => npc.id === selectedNpcId) ?? null;
+
     return (
         <AuthenticatedLayout
             header={
@@ -42,7 +53,13 @@ export default function CampaignsShow({ campaign, isDm }: Props) {
                 <div className="mx-auto max-w-6xl space-y-6 sm:px-6 lg:px-8">
                     {campaign.synopsis && (
                         <Card title="Sinopse">
-                            <p className="whitespace-pre-line text-gray-700">{campaign.synopsis}</p>
+                            <CollapsibleText
+                                text={campaign.synopsis}
+                                expanded={isSynopsisExpanded}
+                                onToggle={() => setIsSynopsisExpanded((current) => !current)}
+                                contentClassName="text-gray-700"
+                                toggleClassName="mt-3 inline-flex text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                            />
                         </Card>
                     )}
 
@@ -87,6 +104,8 @@ export default function CampaignsShow({ campaign, isDm }: Props) {
                         editHref={(l) => route('locations.edit', l.id)}
                         deleteRoute={(l) => route('locations.destroy', l.id)}
                         canEdit={isDm}
+                        onSelect={(id) => setSelectedLocationId((current) => current === id ? null : id)}
+                        selectedId={selectedLocationId}
                         render={(l) => (
                             <div className="flex items-center gap-3">
                                 {l.background_path && (
@@ -113,11 +132,13 @@ export default function CampaignsShow({ campaign, isDm }: Props) {
                         editHref={(n) => route('npcs.edit', n.id)}
                         deleteRoute={(n) => route('npcs.destroy', n.id)}
                         canEdit={isDm}
+                        onSelect={(id) => setSelectedNpcId((current) => current === id ? null : id)}
+                        selectedId={selectedNpcId}
                         render={(n) => (
                             <div className="flex items-center gap-3">
-                                {n.expressions && n.expressions.length > 0 && (
+                                {getNpcImagePath(n) && (
                                     <img
-                                        src={asset(n.expressions[0].sprite_path)}
+                                        src={asset(getNpcImagePath(n))}
                                         alt=""
                                         className="h-12 w-12 rounded-full object-cover"
                                     />
@@ -222,6 +243,62 @@ export default function CampaignsShow({ campaign, isDm }: Props) {
                     />
                 </div>
             </div>
+
+            <DetailModal
+                show={selectedLocation !== null}
+                title={selectedLocation?.name ?? ''}
+                onClose={() => setSelectedLocationId(null)}
+            >
+                {selectedLocation && (
+                    <div className="space-y-4">
+                        {selectedLocation.background_path ? (
+                            <ZoomableImage
+                                src={asset(selectedLocation.background_path) ?? ''}
+                                alt={selectedLocation.name}
+                            />
+                        ) : (
+                            <div className="flex h-48 items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 text-sm text-gray-500">
+                                Sem imagem para este cenário.
+                            </div>
+                        )}
+                        <p className="whitespace-pre-line text-sm text-gray-700">
+                            {selectedLocation.description || 'Este cenário ainda não possui descrição.'}
+                        </p>
+                    </div>
+                )}
+            </DetailModal>
+
+            <DetailModal
+                show={selectedNpc !== null}
+                title={selectedNpc?.name ?? ''}
+                titleCentered
+                onClose={() => setSelectedNpcId(null)}
+            >
+                {selectedNpc && (
+                    <div className="grid gap-4 md:grid-cols-2">
+                        {getNpcImagePath(selectedNpc) ? (
+                            <ZoomableImage
+                                src={asset(getNpcImagePath(selectedNpc)) ?? ''}
+                                alt={selectedNpc.name}
+                            />
+                        ) : (
+                            <div className="flex h-56 items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 text-sm text-gray-500">
+                                Sem retrato disponível.
+                            </div>
+                        )}
+                        <div className="space-y-2">
+                            {selectedNpc.role && (
+                                <p className="text-sm font-medium uppercase tracking-wide text-gray-500">
+                                    {selectedNpc.role}
+                                </p>
+                            )}
+                            <p className="whitespace-pre-line text-sm text-gray-700">
+                                {selectedNpc.description || 'Este NPC ainda não possui descrição.'}
+                            </p>
+                        </div>
+                    </div>
+                )}
+            </DetailModal>
         </AuthenticatedLayout>
     );
 }
@@ -256,6 +333,8 @@ function ResourceSection<T extends ResourceItem>({
     deleteRoute,
     canEdit,
     editLabel = 'editar',
+    onSelect,
+    selectedId,
     render,
 }: {
     title: string;
@@ -265,6 +344,8 @@ function ResourceSection<T extends ResourceItem>({
     deleteRoute: (i: T) => string;
     canEdit: boolean;
     editLabel?: string;
+    onSelect?: (id: number) => void;
+    selectedId?: number | null;
     render: (i: T) => React.ReactNode;
 }) {
     return (
@@ -284,32 +365,60 @@ function ResourceSection<T extends ResourceItem>({
             {items.length === 0 ? (
                 <p className="text-sm text-gray-500">Nada por aqui ainda.</p>
             ) : (
-                <ul className="divide-y">
-                    {items.map((i) => (
-                        <li key={i.id} className="flex items-center justify-between py-2">
-                            <div className="flex-1">{render(i)}</div>
-                            {canEdit && (
-                                <div className="ml-4 flex items-center gap-3 text-xs">
-                                    <Link href={editHref(i)} className="text-indigo-600 hover:underline">
-                                        {editLabel}
-                                    </Link>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            if (confirm('Excluir?')) router.delete(deleteRoute(i));
-                                        }}
-                                        className="text-red-600 hover:underline"
-                                    >
-                                        excluir
-                                    </button>
+                <>
+                    <ul className="divide-y">
+                        {items.map((i) => (
+                            <li key={i.id} className="flex items-center justify-between py-2">
+                                <div className="flex-1">
+                                    {onSelect ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => onSelect(i.id)}
+                                            className={
+                                                'w-full rounded-lg px-3 py-2 text-left transition hover:bg-gray-50 ' +
+                                                (selectedId === i.id ? 'bg-indigo-50 ring-1 ring-indigo-100' : '')
+                                            }
+                                        >
+                                            {render(i)}
+                                        </button>
+                                    ) : (
+                                        <div>{render(i)}</div>
+                                    )}
                                 </div>
-                            )}
-                        </li>
-                    ))}
-                </ul>
+                                {canEdit && (
+                                    <div className="ml-4 flex items-center gap-3 text-xs">
+                                        <Link href={editHref(i)} className="text-indigo-600 hover:underline">
+                                            {editLabel}
+                                        </Link>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (confirm('Excluir?')) router.delete(deleteRoute(i));
+                                            }}
+                                            className="text-red-600 hover:underline"
+                                        >
+                                            excluir
+                                        </button>
+                                    </div>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
+                </>
             )}
         </Card>
     );
+}
+
+function getNpcImagePath(campaignNpc: Npc): string | null {
+    if (campaignNpc.portrait_path) {
+        return campaignNpc.portrait_path;
+    }
+
+    const defaultExpression =
+        campaignNpc.expressions?.find((expression: NonNullable<Npc['expressions']>[number]) => expression.is_default) ?? campaignNpc.expressions?.[0];
+
+    return defaultExpression?.sprite_path ?? null;
 }
 
 function InviteForm({ campaignId }: { campaignId: number }) {
