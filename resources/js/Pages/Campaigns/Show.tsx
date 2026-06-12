@@ -1,5 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import CollapsibleText from '@/Components/CollapsibleText';
+import DetailModal from '@/Components/DetailModal';
+import ZoomableImage from '@/Components/ZoomableImage';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -104,24 +106,6 @@ export default function CampaignsShow({ campaign, isDm }: Props) {
                         canEdit={isDm}
                         onSelect={(id) => setSelectedLocationId((current) => current === id ? null : id)}
                         selectedId={selectedLocationId}
-                        detailPanel={selectedLocation && (
-                            <InlineDetailPanel title={selectedLocation.name}>
-                                {selectedLocation.background_path ? (
-                                    <img
-                                        src={asset(selectedLocation.background_path)}
-                                        alt={selectedLocation.name}
-                                        className="max-h-80 w-full rounded-lg object-cover"
-                                    />
-                                ) : (
-                                    <div className="flex h-48 items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 text-sm text-gray-500">
-                                        Sem imagem para este cenário.
-                                    </div>
-                                )}
-                                <p className="whitespace-pre-line text-sm text-gray-700">
-                                    {selectedLocation.description || 'Este cenário ainda não possui descrição.'}
-                                </p>
-                            </InlineDetailPanel>
-                        )}
                         render={(l) => (
                             <div className="flex items-center gap-3">
                                 {l.background_path && (
@@ -150,33 +134,6 @@ export default function CampaignsShow({ campaign, isDm }: Props) {
                         canEdit={isDm}
                         onSelect={(id) => setSelectedNpcId((current) => current === id ? null : id)}
                         selectedId={selectedNpcId}
-                        detailPanel={selectedNpc && (
-                            <InlineDetailPanel title={selectedNpc.name} titleCentered>
-                                <div className="grid gap-4 md:grid-cols-[220px,1fr]">
-                                    {getNpcImagePath(selectedNpc) ? (
-                                        <img
-                                            src={asset(getNpcImagePath(selectedNpc))}
-                                            alt={selectedNpc.name}
-                                            className="h-56 w-full rounded-lg object-cover"
-                                        />
-                                    ) : (
-                                        <div className="flex h-56 items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 text-sm text-gray-500">
-                                            Sem retrato disponível.
-                                        </div>
-                                    )}
-                                    <div className="space-y-2">
-                                        {selectedNpc.role && (
-                                            <p className="text-sm font-medium uppercase tracking-wide text-gray-500">
-                                                {selectedNpc.role}
-                                            </p>
-                                        )}
-                                        <p className="whitespace-pre-line text-sm text-gray-700">
-                                            {selectedNpc.description || 'Este NPC ainda não possui descrição.'}
-                                        </p>
-                                    </div>
-                                </div>
-                            </InlineDetailPanel>
-                        )}
                         render={(n) => (
                             <div className="flex items-center gap-3">
                                 {getNpcImagePath(n) && (
@@ -286,6 +243,62 @@ export default function CampaignsShow({ campaign, isDm }: Props) {
                     />
                 </div>
             </div>
+
+            <DetailModal
+                show={selectedLocation !== null}
+                title={selectedLocation?.name ?? ''}
+                onClose={() => setSelectedLocationId(null)}
+            >
+                {selectedLocation && (
+                    <div className="space-y-4">
+                        {selectedLocation.background_path ? (
+                            <ZoomableImage
+                                src={asset(selectedLocation.background_path) ?? ''}
+                                alt={selectedLocation.name}
+                            />
+                        ) : (
+                            <div className="flex h-48 items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 text-sm text-gray-500">
+                                Sem imagem para este cenário.
+                            </div>
+                        )}
+                        <p className="whitespace-pre-line text-sm text-gray-700">
+                            {selectedLocation.description || 'Este cenário ainda não possui descrição.'}
+                        </p>
+                    </div>
+                )}
+            </DetailModal>
+
+            <DetailModal
+                show={selectedNpc !== null}
+                title={selectedNpc?.name ?? ''}
+                titleCentered
+                onClose={() => setSelectedNpcId(null)}
+            >
+                {selectedNpc && (
+                    <div className="grid gap-4 md:grid-cols-2">
+                        {getNpcImagePath(selectedNpc) ? (
+                            <ZoomableImage
+                                src={asset(getNpcImagePath(selectedNpc)) ?? ''}
+                                alt={selectedNpc.name}
+                            />
+                        ) : (
+                            <div className="flex h-56 items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 text-sm text-gray-500">
+                                Sem retrato disponível.
+                            </div>
+                        )}
+                        <div className="space-y-2">
+                            {selectedNpc.role && (
+                                <p className="text-sm font-medium uppercase tracking-wide text-gray-500">
+                                    {selectedNpc.role}
+                                </p>
+                            )}
+                            <p className="whitespace-pre-line text-sm text-gray-700">
+                                {selectedNpc.description || 'Este NPC ainda não possui descrição.'}
+                            </p>
+                        </div>
+                    </div>
+                )}
+            </DetailModal>
         </AuthenticatedLayout>
     );
 }
@@ -322,7 +335,6 @@ function ResourceSection<T extends ResourceItem>({
     editLabel = 'editar',
     onSelect,
     selectedId,
-    detailPanel,
     render,
 }: {
     title: string;
@@ -334,7 +346,6 @@ function ResourceSection<T extends ResourceItem>({
     editLabel?: string;
     onSelect?: (id: number) => void;
     selectedId?: number | null;
-    detailPanel?: React.ReactNode;
     render: (i: T) => React.ReactNode;
 }) {
     return (
@@ -393,27 +404,9 @@ function ResourceSection<T extends ResourceItem>({
                             </li>
                         ))}
                     </ul>
-                    {detailPanel && <div className="mt-4">{detailPanel}</div>}
                 </>
             )}
         </Card>
-    );
-}
-
-function InlineDetailPanel({
-    title,
-    titleCentered = false,
-    children,
-}: {
-    title: string;
-    titleCentered?: boolean;
-    children: React.ReactNode;
-}) {
-    return (
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 shadow-sm">
-            <h4 className={`text-lg font-semibold text-gray-900 ${titleCentered ? 'text-center' : ''}`}>{title}</h4>
-            <div className="mt-4 space-y-4">{children}</div>
-        </div>
     );
 }
 
