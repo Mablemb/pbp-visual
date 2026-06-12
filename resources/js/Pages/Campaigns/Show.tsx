@@ -1,5 +1,4 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import CollapsibleText from '@/Components/CollapsibleText';
 import DetailModal from '@/Components/DetailModal';
 import ZoomableImage from '@/Components/ZoomableImage';
 import InputError from '@/Components/InputError';
@@ -52,15 +51,30 @@ export default function CampaignsShow({ campaign, isDm }: Props) {
             <div className="py-8">
                 <div className="mx-auto max-w-6xl space-y-6 sm:px-6 lg:px-8">
                     {campaign.synopsis && (
-                        <Card title="Sinopse">
-                            <CollapsibleText
-                                text={campaign.synopsis}
-                                expanded={isSynopsisExpanded}
-                                onToggle={() => setIsSynopsisExpanded((current) => !current)}
-                                contentClassName="text-gray-700"
-                                toggleClassName="mt-3 inline-flex text-sm font-medium text-indigo-600 hover:text-indigo-700"
-                            />
-                        </Card>
+                        <section className="rounded-lg bg-white shadow-sm">
+                            <button
+                                type="button"
+                                onClick={() => setIsSynopsisExpanded((current) => !current)}
+                                className="flex w-full items-center justify-between gap-4 px-6 py-4 text-left"
+                                aria-expanded={isSynopsisExpanded}
+                            >
+                                <h3 className="text-lg font-semibold">Sinopse</h3>
+                                <svg
+                                    className={`h-5 w-5 shrink-0 text-gray-400 transition-transform ${isSynopsisExpanded ? 'rotate-180' : ''}`}
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="m19 9-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <div className="px-6 pb-6">
+                                <p className={`text-gray-700 ${isSynopsisExpanded ? 'whitespace-pre-line' : 'line-clamp-2'}`}>
+                                    {campaign.synopsis}
+                                </p>
+                            </div>
+                        </section>
                     )}
 
                     <Card

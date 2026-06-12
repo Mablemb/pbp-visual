@@ -1,5 +1,4 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import CollapsibleText from '@/Components/CollapsibleText';
 import { CampaignSummary } from '@/types/models';
 import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
@@ -57,35 +56,55 @@ function CampaignList({ items, emptyMsg }: { items: CampaignSummary[]; emptyMsg:
     }
     return (
         <ul className="divide-y">
-            {items.map((c) => (
-                <li key={c.id} className="py-3">
-                    <div className="flex items-start justify-between gap-4 rounded-md px-2 py-2 hover:bg-gray-50">
-                        <div className="min-w-0 flex-1">
-                            <Link
-                                href={route('campaigns.show', c.id)}
-                                className="block font-medium text-indigo-700 hover:underline"
-                            >
-                                {c.name}
-                            </Link>
-                            {c.synopsis && (
-                                <div className="mt-1">
-                                    <CollapsibleText
-                                        text={c.synopsis}
-                                        expanded={expandedCampaignIds.includes(c.id)}
-                                        onToggle={() => toggleCampaign(c.id)}
-                                    />
+            {items.map((c) => {
+                const isExpanded = expandedCampaignIds.includes(c.id);
+                return (
+                    <li key={c.id} className="py-2">
+                        <div className="rounded-md px-2 py-2 hover:bg-gray-50">
+                            <div className="flex items-center justify-between gap-3">
+                                <Link
+                                    href={route('campaigns.show', c.id)}
+                                    className="min-w-0 flex-1 font-medium text-indigo-700 hover:underline"
+                                >
+                                    {c.name}
+                                </Link>
+                                <div className="flex shrink-0 items-center gap-2">
+                                    {c.synopsis && (
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleCampaign(c.id)}
+                                            aria-expanded={isExpanded}
+                                            aria-label={isExpanded ? 'Recolher sinopse' : 'Expandir sinopse'}
+                                            className="rounded-full p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+                                        >
+                                            <svg
+                                                className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                                strokeWidth={2}
+                                            >
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="m19 9-7 7-7-7" />
+                                            </svg>
+                                        </button>
+                                    )}
+                                    <Link
+                                        href={route('campaigns.show', c.id)}
+                                        className="text-sm font-medium text-indigo-600 hover:underline"
+                                    >
+                                        Abrir
+                                    </Link>
                                 </div>
+                            </div>
+                            {c.synopsis && (
+                                <p className={`mt-1 text-sm text-gray-600 ${isExpanded ? 'whitespace-pre-line' : 'line-clamp-2'}`}>
+                                    {c.synopsis}
+                                </p>
                             )}
                         </div>
-                        <Link
-                            href={route('campaigns.show', c.id)}
-                            className="shrink-0 text-sm font-medium text-indigo-600 hover:underline"
-                        >
-                            Abrir
-                        </Link>
-                    </div>
-                </li>
-            ))}
+                    </li>
+                );
+            })}
         </ul>
     );
 }
