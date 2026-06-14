@@ -53,6 +53,7 @@ export default function CharactersEdit({ campaign, character, expressionLabels }
                                 portrait_prompt: '',
                                 portrait_refs: [],
                                 portrait_existing_refs: [],
+                                portrait_existing_path: '',
                             }}
                             portraitUrl={asset(character.portrait_path)}
                             submit={(form) => form.post(route('characters.update', character.id), { forceFormData: true })}
@@ -61,10 +62,11 @@ export default function CharactersEdit({ campaign, character, expressionLabels }
                                 route('characters.portrait.destroy', character.id),
                                 { preserveScroll: true },
                             ) : undefined}
+                            campaignId={campaign.id}
                         />
                     </section>
 
-                    <ExpressionsPanel character={character} expressionLabels={expressionLabels} />
+                    <ExpressionsPanel character={character} expressionLabels={expressionLabels} campaignId={campaign.id} />
                 </div>
                 </div>
             </div>
@@ -72,16 +74,17 @@ export default function CharactersEdit({ campaign, character, expressionLabels }
     );
 }
 
-function ExpressionsPanel({ character, expressionLabels }: { character: Character; expressionLabels: string[] }) {
+function ExpressionsPanel({ character, expressionLabels, campaignId }: { character: Character; expressionLabels: string[]; campaignId: number }) {
     const { features } = usePage<PageProps>().props;
 
     const form = useForm<{
         label: string;
-        sprite_source: '' | 'upload' | 'ai';
+        sprite_source: '' | 'upload' | 'ai' | 'existing';
         sprite: File | null;
         sprite_prompt: string;
         sprite_refs: File[];
         sprite_existing_refs: string[];
+        sprite_existing_path: string;
     }>({
         label: expressionLabels[0] ?? 'neutral',
         sprite_source: '',
@@ -89,6 +92,7 @@ function ExpressionsPanel({ character, expressionLabels }: { character: Characte
         sprite_prompt: '',
         sprite_refs: [],
         sprite_existing_refs: [],
+        sprite_existing_path: '',
     });
 
     const existingRefs = (character.expressions ?? []).map((e) => ({
@@ -162,6 +166,7 @@ function ExpressionsPanel({ character, expressionLabels }: { character: Characte
                                 'sprite_prompt',
                                 'sprite_refs',
                                 'sprite_existing_refs',
+                                'sprite_existing_path',
                                 'sprite_source',
                             ),
                     });
@@ -191,6 +196,8 @@ function ExpressionsPanel({ character, expressionLabels }: { character: Characte
                     errors={form.errors as Record<string, string | undefined>}
                     aiDisabled={!features.ai_images}
                     existingRefs={existingRefs}
+                    campaignId={campaignId}
+                    galleryCategory="players"
                 />
                 <PrimaryButton disabled={form.processing}>+ Adicionar expressão</PrimaryButton>
             </form>

@@ -20,11 +20,12 @@ export default function NpcsEdit({ campaign, npc, expressionLabels }: Props) {
 
     const expr = useForm<{
         label: string;
-        sprite_source: '' | 'upload' | 'ai';
+        sprite_source: '' | 'upload' | 'ai' | 'existing';
         sprite: File | null;
         sprite_prompt: string;
         sprite_refs: File[];
         sprite_existing_refs: string[];
+        sprite_existing_path: string;
     }>({
         label: expressionLabels[0] ?? 'neutral',
         sprite_source: '',
@@ -32,6 +33,7 @@ export default function NpcsEdit({ campaign, npc, expressionLabels }: Props) {
         sprite_prompt: '',
         sprite_refs: [],
         sprite_existing_refs: [],
+        sprite_existing_path: '',
     });
 
     const existingRefs = (npc.expressions ?? []).map((e) => ({
@@ -61,6 +63,7 @@ export default function NpcsEdit({ campaign, npc, expressionLabels }: Props) {
         portrait_prompt: '',
         portrait_refs: [],
         portrait_existing_refs: [],
+        portrait_existing_path: '',
     };
 
     return (
@@ -94,6 +97,7 @@ export default function NpcsEdit({ campaign, npc, expressionLabels }: Props) {
                                 route('npcs.portrait.destroy', npc.id),
                                 { preserveScroll: true },
                             ) : undefined}
+                            campaignId={campaign.id}
                         />
                     </section>
 
@@ -154,6 +158,7 @@ export default function NpcsEdit({ campaign, npc, expressionLabels }: Props) {
                                             'sprite_prompt',
                                             'sprite_refs',
                                             'sprite_existing_refs',
+                                            'sprite_existing_path',
                                             'sprite_source',
                                         );
                                     },
@@ -184,6 +189,8 @@ export default function NpcsEdit({ campaign, npc, expressionLabels }: Props) {
                                 errors={expr.errors as Record<string, string | undefined>}
                                 aiDisabled={!features.ai_images}
                                 existingRefs={existingRefs}
+                                campaignId={campaign.id}
+                                galleryCategory="npcs"
                             />
                             <PrimaryButton disabled={expr.processing}>+ Adicionar expressão</PrimaryButton>
                         </form>

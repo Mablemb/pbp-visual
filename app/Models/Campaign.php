@@ -52,6 +52,11 @@ class Campaign extends Model
         return $this->hasMany(Scene::class);
     }
 
+    public function images(): HasMany
+    {
+        return $this->hasMany(CampaignImage::class);
+    }
+
     /** True if the user is the DM or a member of this campaign. */
     public function isAccessibleBy(User $user): bool
     {

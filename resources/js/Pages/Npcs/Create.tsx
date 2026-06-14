@@ -16,11 +16,12 @@ export interface NpcFormData {
     strength: number; dexterity: number; constitution: number;
     intelligence: number; wisdom: number; charisma: number;
     bio: string;
-    portrait_source: '' | 'upload' | 'ai';
+    portrait_source: '' | 'upload' | 'ai' | 'existing';
     portrait: File | null;
     portrait_prompt: string;
     portrait_refs: File[];
     portrait_existing_refs: string[];
+    portrait_existing_path: string;
 }
 
 const ABILITY_KEYS: (keyof NpcFormData)[] = [
@@ -33,12 +34,14 @@ export function NpcForm({
     portraitUrl,
     submitLabel,
     onPortraitDelete,
+    campaignId,
 }: {
     initial: NpcFormData;
     submit: (form: ReturnType<typeof useForm<NpcFormData>>) => void;
     portraitUrl?: string;
     submitLabel: string;
     onPortraitDelete?: () => void;
+    campaignId: number;
 }) {
     const form = useForm<NpcFormData>(initial);
     const { data, setData, errors, processing, progress } = form;
@@ -121,6 +124,8 @@ export function NpcForm({
                 aiDisabled={!features.ai_images}
                 currentPreview={portraitUrl ?? null}
                 onDelete={onPortraitDelete}
+                campaignId={campaignId}
+                galleryCategory="npcs"
             />
             {progress && <progress value={progress.percentage} max={100} className="w-full" />}
 
@@ -176,9 +181,11 @@ export default function NpcsCreate({ campaign }: CreateProps) {
                             bio: '',
                             portrait_source: '', portrait: null,
                             portrait_prompt: '', portrait_refs: [], portrait_existing_refs: [],
+                            portrait_existing_path: '',
                         }}
                         submit={(form) => form.post(route('campaigns.npcs.store', campaign.id), { forceFormData: true })}
                         submitLabel="Criar e adicionar expressões →"
+                        campaignId={campaign.id}
                     />
                 </div>
             </div>

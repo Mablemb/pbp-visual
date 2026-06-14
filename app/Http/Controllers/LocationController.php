@@ -4,11 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Campaign;
 use App\Models\Location;
-use App\Services\ImageGeneration\ImageGenerator;
 use App\Services\ImageGeneration\ImageInput;
+use App\Services\ImageGeneration\ImageLibrary;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,17 +20,14 @@ class LocationController extends Controller
         return Inertia::render('Locations/Create', ['campaign' => $campaign->only('id', 'name')]);
     }
 
-    public function store(Request $request, Campaign $campaign, ImageGenerator $images): RedirectResponse
+    public function store(Request $request, Campaign $campaign, ImageLibrary $library): RedirectResponse
     {
         $this->authorize('manage', $campaign);
 
         $data = $this->validated($request);
 
         if ($input = ImageInput::fromRequest($request, 'background')) {
-            $data['background_path'] = $images->acquire(
-                $input,
-                "campaigns/{$campaign->id}/backgrounds",
-            );
+            $data['background_path'] = $library->acquire($input, $campaign, 'locations', 'Background');
         }
 
         $campaign->locations()->create($data);
@@ -49,20 +45,18 @@ class LocationController extends Controller
         ]);
     }
 
-    public function update(Request $request, Location $location, ImageGenerator $images): RedirectResponse
+    public function update(Request $request, Location $location, ImageLibrary $library): RedirectResponse
     {
         $this->authorize('manage', $location->campaign);
 
         $data = $this->validated($request);
 
         if ($input = ImageInput::fromRequest($request, 'background')) {
-            if ($location->background_path) {
-                Storage::disk('public')->delete($location->background_path);
+            $oldPath = $location->background_path;
+            $data['background_path'] = $library->acquire($input, $location->campaign, 'locations', 'Background');
+            if ($oldPath && $oldPath !== $data['background_path']) {
+                $library->release($oldPath);
             }
-            $data['background_path'] = $images->acquire(
-                $input,
-                "campaigns/{$location->campaign_id}/backgrounds",
-            );
         }
 
         $location->update($data);
@@ -70,27 +64,27 @@ class LocationController extends Controller
         return redirect()->route('campaigns.show', $location->campaign_id);
     }
 
-    public function destroyBackground(Location $location): RedirectResponse
+    public function destroyBackground(Location $location, ImageLibrary $library): RedirectResponse
     {
         $this->authorize('manage', $location->campaign);
 
         if ($location->background_path) {
-            Storage::disk('public')->delete($location->background_path);
+            $path = $location->background_path;
             $location->update(['background_path' => null]);
+            $library->release($path);
         }
 
         return back();
     }
 
-    public function destroy(Location $location): RedirectResponse
+    public function destroy(Location $location, ImageLibrary $library): RedirectResponse
     {
         $this->authorize('manage', $location->campaign);
 
-        if ($location->background_path) {
-            Storage::disk('public')->delete($location->background_path);
-        }
         $campaignId = $location->campaign_id;
+        $path = $location->background_path;
         $location->delete();
+        $library->release($path);
 
         return redirect()->route('campaigns.show', $campaignId);
     }

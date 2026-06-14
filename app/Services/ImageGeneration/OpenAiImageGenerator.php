@@ -40,6 +40,10 @@ class OpenAiImageGenerator implements ImageGenerator
     {
         $source = $input['source'] ?? 'upload';
 
+        if ($source === 'existing') {
+            return (string) ($input['path'] ?? '');
+        }
+
         if ($source === 'upload') {
             $file = $input['upload'] ?? null;
             if (! $file) {

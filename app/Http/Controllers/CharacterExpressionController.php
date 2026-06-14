@@ -4,17 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\Character;
 use App\Models\CharacterExpression;
-use App\Services\ImageGeneration\ImageGenerator;
 use App\Services\ImageGeneration\ImageInput;
+use App\Services\ImageGeneration\ImageLibrary;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class CharacterExpressionController extends Controller
 {
-    public function store(Request $request, Character $character, ImageGenerator $images): RedirectResponse
+    public function store(Request $request, Character $character, ImageLibrary $library): RedirectResponse
     {
         $this->authorizeEdit($request, $character);
 
@@ -31,13 +30,15 @@ class CharacterExpressionController extends Controller
         $input = ImageInput::fromRequest($request, 'sprite');
         if (! $input) {
             throw ValidationException::withMessages([
-                'sprite_source' => 'Escolha entre upload ou geração por IA.',
+                'sprite_source' => 'Escolha entre upload, geração por IA ou galeria.',
             ]);
         }
 
-        $spritePath = $images->acquire(
+        $spritePath = $library->acquire(
             $input,
-            "campaigns/{$character->campaign_id}/character-sprites/{$character->id}",
+            $character->campaign,
+            'players',
+            $request->string('label')->toString(),
         );
 
         $isDefault = $request->boolean('is_default');
@@ -55,16 +56,15 @@ class CharacterExpressionController extends Controller
         return back();
     }
 
-    public function destroy(Request $request, Character $character, CharacterExpression $expression): RedirectResponse
+    public function destroy(Request $request, Character $character, CharacterExpression $expression, ImageLibrary $library): RedirectResponse
     {
         $this->authorizeEdit($request, $character);
 
         abort_unless($expression->character_id === $character->id, 404);
 
-        if ($expression->sprite_path) {
-            Storage::disk('public')->delete($expression->sprite_path);
-        }
+        $path = $expression->sprite_path;
         $expression->delete();
+        $library->release($path);
 
         return back();
     }

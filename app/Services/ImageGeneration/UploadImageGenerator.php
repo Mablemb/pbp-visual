@@ -15,6 +15,10 @@ class UploadImageGenerator implements ImageGenerator
     {
         $source = $input['source'] ?? 'upload';
 
+        if ($source === 'existing') {
+            return (string) ($input['path'] ?? '');
+        }
+
         if ($source === 'ai') {
             throw ValidationException::withMessages([
                 'image' => 'AI generation is not configured. Set IMAGE_DRIVER=openai in your .env to enable it.',

@@ -81,6 +81,14 @@ export interface CharacterExpression {
     is_default: boolean;
 }
 
+export interface CampaignImage {
+    id: number;
+    campaign_id: number;
+    category: 'npcs' | 'players' | 'locations';
+    path: string;
+    label: string | null;
+}
+
 export interface Quest {
     id: number;
     campaign_id: number;

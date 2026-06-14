@@ -4,17 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\Npc;
 use App\Models\NpcExpression;
-use App\Services\ImageGeneration\ImageGenerator;
 use App\Services\ImageGeneration\ImageInput;
+use App\Services\ImageGeneration\ImageLibrary;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class NpcExpressionController extends Controller
 {
-    public function store(Request $request, Npc $npc, ImageGenerator $images): RedirectResponse
+    public function store(Request $request, Npc $npc, ImageLibrary $library): RedirectResponse
     {
         $this->authorize('manage', $npc->campaign);
 
@@ -31,13 +30,15 @@ class NpcExpressionController extends Controller
         $input = ImageInput::fromRequest($request, 'sprite');
         if (! $input) {
             throw ValidationException::withMessages([
-                'sprite_source' => 'Escolha entre upload ou geração por IA.',
+                'sprite_source' => 'Escolha entre upload, geração por IA ou galeria.',
             ]);
         }
 
-        $spritePath = $images->acquire(
+        $spritePath = $library->acquire(
             $input,
-            "campaigns/{$npc->campaign_id}/sprites/{$npc->id}",
+            $npc->campaign,
+            'npcs',
+            $request->string('label')->toString(),
         );
 
         $isDefault = $request->boolean('is_default');
@@ -55,16 +56,15 @@ class NpcExpressionController extends Controller
         return back();
     }
 
-    public function destroy(Npc $npc, NpcExpression $expression): RedirectResponse
+    public function destroy(Npc $npc, NpcExpression $expression, ImageLibrary $library): RedirectResponse
     {
         $this->authorize('manage', $npc->campaign);
 
         abort_unless($expression->npc_id === $npc->id, 404);
 
-        if ($expression->sprite_path) {
-            Storage::disk('public')->delete($expression->sprite_path);
-        }
+        $path = $expression->sprite_path;
         $expression->delete();
+        $library->release($path);
 
         return back();
     }

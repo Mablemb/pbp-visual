@@ -4,11 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Campaign;
 use App\Models\Character;
-use App\Services\ImageGeneration\ImageGenerator;
 use App\Services\ImageGeneration\ImageInput;
+use App\Services\ImageGeneration\ImageLibrary;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -23,21 +22,22 @@ class CharacterController extends Controller
         ]);
     }
 
-    public function store(Request $request, Campaign $campaign, ImageGenerator $images): RedirectResponse
+    public function store(Request $request, Campaign $campaign, ImageLibrary $library): RedirectResponse
     {
         $this->authorize('view', $campaign);
 
         $data = $this->validated($request);
 
         if ($input = ImageInput::fromRequest($request, 'portrait')) {
-            $data['portrait_path'] = $images->acquire(
-                $input,
-                "campaigns/{$campaign->id}/portraits",
-            );
+            $data['portrait_path'] = $library->acquire($input, $campaign, 'players', 'Retrato');
         }
 
         $data['user_id'] = $request->user()->id;
         $character = $campaign->characters()->create($data);
+
+        if (! empty($data['portrait_path'])) {
+            $this->seedNeutral($character, $data['portrait_path']);
+        }
 
         return redirect()->route('characters.edit', $character);
     }
@@ -59,7 +59,7 @@ class CharacterController extends Controller
         ]);
     }
 
-    public function update(Request $request, Character $character, ImageGenerator $images): RedirectResponse
+    public function update(Request $request, Character $character, ImageLibrary $library): RedirectResponse
     {
         $this->authorize('view', $character->campaign);
         abort_unless(
@@ -71,21 +71,23 @@ class CharacterController extends Controller
         $data = $this->validated($request);
 
         if ($input = ImageInput::fromRequest($request, 'portrait')) {
-            if ($character->portrait_path) {
-                Storage::disk('public')->delete($character->portrait_path);
+            $oldPath = $character->portrait_path;
+            $data['portrait_path'] = $library->acquire($input, $character->campaign, 'players', 'Retrato');
+            if ($oldPath && $oldPath !== $data['portrait_path']) {
+                $library->release($oldPath);
             }
-            $data['portrait_path'] = $images->acquire(
-                $input,
-                "campaigns/{$character->campaign_id}/portraits",
-            );
         }
 
         $character->update($data);
 
+        if (! empty($data['portrait_path']) && $character->expressions()->count() === 0) {
+            $this->seedNeutral($character, $data['portrait_path']);
+        }
+
         return redirect()->route('characters.edit', $character);
     }
 
-    public function destroyPortrait(Request $request, Character $character): RedirectResponse
+    public function destroyPortrait(Request $request, Character $character, ImageLibrary $library): RedirectResponse
     {
         $this->authorize('view', $character->campaign);
         abort_unless(
@@ -95,14 +97,15 @@ class CharacterController extends Controller
         );
 
         if ($character->portrait_path) {
-            Storage::disk('public')->delete($character->portrait_path);
+            $path = $character->portrait_path;
             $character->update(['portrait_path' => null]);
+            $library->release($path);
         }
 
         return back();
     }
 
-    public function destroy(Request $request, Character $character): RedirectResponse
+    public function destroy(Request $request, Character $character, ImageLibrary $library): RedirectResponse
     {
         abort_unless(
             $character->user_id === $request->user()->id
@@ -110,13 +113,27 @@ class CharacterController extends Controller
             403
         );
 
-        if ($character->portrait_path) {
-            Storage::disk('public')->delete($character->portrait_path);
-        }
         $campaignId = $character->campaign_id;
+
+        $paths = $character->expressions()->pluck('sprite_path')->all();
+        $paths[] = $character->portrait_path;
         $character->delete();
 
+        foreach (array_unique(array_filter($paths)) as $path) {
+            $library->release($path);
+        }
+
         return redirect()->route('campaigns.show', $campaignId);
+    }
+
+    /** Reuse the portrait as the default "neutral" sprite (same file). */
+    private function seedNeutral(Character $character, string $path): void
+    {
+        $character->expressions()->create([
+            'label' => 'neutral',
+            'sprite_path' => $path,
+            'is_default' => true,
+        ]);
     }
 
     private function validated(Request $request): array

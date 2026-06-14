@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CampaignController;
+use App\Http\Controllers\CampaignImageController;
 use App\Http\Controllers\CampaignMemberController;
 use App\Http\Controllers\CharacterController;
 use App\Http\Controllers\CharacterExpressionController;
@@ -38,6 +39,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('members', [CampaignMemberController::class, 'store'])->name('campaigns.members.store');
         Route::delete('members/{user}', [CampaignMemberController::class, 'destroy'])->name('campaigns.members.destroy');
     });
+
+    // Reuse gallery: cataloged images for a campaign, filtered by category.
+    Route::get('campaigns/{campaign}/images', [CampaignImageController::class, 'index'])
+        ->name('campaigns.images.index');
 
     // Shallow-nested child resources: index/create/store live under
     // /campaigns/{campaign}/..., but edit/update/destroy live at /<resource>/{id}/...

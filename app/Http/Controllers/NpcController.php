@@ -5,11 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Campaign;
 use App\Models\Npc;
 use App\Models\NpcExpression;
-use App\Services\ImageGeneration\ImageGenerator;
 use App\Services\ImageGeneration\ImageInput;
+use App\Services\ImageGeneration\ImageLibrary;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -24,20 +23,21 @@ class NpcController extends Controller
         ]);
     }
 
-    public function store(Request $request, Campaign $campaign, ImageGenerator $images): RedirectResponse
+    public function store(Request $request, Campaign $campaign, ImageLibrary $library): RedirectResponse
     {
         $this->authorize('manage', $campaign);
 
         $data = $this->validated($request);
 
         if ($input = ImageInput::fromRequest($request, 'portrait')) {
-            $data['portrait_path'] = $images->acquire(
-                $input,
-                "campaigns/{$campaign->id}/portraits",
-            );
+            $data['portrait_path'] = $library->acquire($input, $campaign, 'npcs', 'Retrato');
         }
 
         $npc = $campaign->npcs()->create($data);
+
+        if (! empty($data['portrait_path'])) {
+            $this->seedNeutral($npc, $data['portrait_path']);
+        }
 
         return redirect()->route('npcs.edit', $npc);
     }
@@ -55,50 +55,70 @@ class NpcController extends Controller
         ]);
     }
 
-    public function update(Request $request, Npc $npc, ImageGenerator $images): RedirectResponse
+    public function update(Request $request, Npc $npc, ImageLibrary $library): RedirectResponse
     {
         $this->authorize('manage', $npc->campaign);
 
         $data = $this->validated($request);
 
         if ($input = ImageInput::fromRequest($request, 'portrait')) {
-            if ($npc->portrait_path) {
-                Storage::disk('public')->delete($npc->portrait_path);
+            $oldPath = $npc->portrait_path;
+            $data['portrait_path'] = $library->acquire($input, $npc->campaign, 'npcs', 'Retrato');
+            if ($oldPath && $oldPath !== $data['portrait_path']) {
+                $library->release($oldPath);
             }
-            $data['portrait_path'] = $images->acquire(
-                $input,
-                "campaigns/{$npc->campaign_id}/portraits",
-            );
         }
 
         $npc->update($data);
 
+        if (! empty($data['portrait_path']) && $npc->expressions()->count() === 0) {
+            $this->seedNeutral($npc, $data['portrait_path']);
+        }
+
         return redirect()->route('npcs.edit', $npc);
     }
 
-    public function destroyPortrait(Npc $npc): RedirectResponse
+    public function destroyPortrait(Npc $npc, ImageLibrary $library): RedirectResponse
     {
         $this->authorize('manage', $npc->campaign);
 
         if ($npc->portrait_path) {
-            Storage::disk('public')->delete($npc->portrait_path);
+            $path = $npc->portrait_path;
             $npc->update(['portrait_path' => null]);
+            $library->release($path);
         }
 
         return back();
     }
 
-    public function destroy(Npc $npc): RedirectResponse
+    public function destroy(Npc $npc, ImageLibrary $library): RedirectResponse
     {
         $this->authorize('manage', $npc->campaign);
 
         $campaignId = $npc->campaign_id;
-        if ($npc->portrait_path) {
-            Storage::disk('public')->delete($npc->portrait_path);
-        }
+
+        // Collect every image this NPC referenced, delete it (expressions
+        // cascade), then release each unique path so shared/gallery images
+        // survive while orphaned files are cleaned up.
+        $paths = $npc->expressions()->pluck('sprite_path')->all();
+        $paths[] = $npc->portrait_path;
         $npc->delete();
 
+        foreach (array_unique(array_filter($paths)) as $path) {
+            $library->release($path);
+        }
+
         return redirect()->route('campaigns.show', $campaignId);
+    }
+
+    /** Reuse the portrait as the default "neutral" sprite (same file). */
+    private function seedNeutral(Npc $npc, string $path): void
+    {
+        $npc->expressions()->create([
+            'label' => 'neutral',
+            'sprite_path' => $path,
+            'is_default' => true,
+        ]);
     }
 
     private function validated(Request $request): array

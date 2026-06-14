@@ -13,11 +13,12 @@ interface Props { campaign: { id: number; name: string } }
 export interface LocationFormData {
     name: string;
     description: string;
-    background_source: '' | 'upload' | 'ai';
+    background_source: '' | 'upload' | 'ai' | 'existing';
     background: File | null;
     background_prompt: string;
     background_refs: File[];
     background_existing_refs: string[];
+    background_existing_path: string;
 }
 
 export const emptyLocationForm: LocationFormData = {
@@ -28,6 +29,7 @@ export const emptyLocationForm: LocationFormData = {
     background_prompt: '',
     background_refs: [],
     background_existing_refs: [],
+    background_existing_path: '',
 };
 
 export default function LocationsCreate({ campaign }: Props) {
@@ -47,7 +49,7 @@ export default function LocationsCreate({ campaign }: Props) {
                     className="space-y-4"
                     encType="multipart/form-data"
                 >
-                    <LocationFields form={form} />
+                    <LocationFields form={form} campaignId={campaign.id} />
                     <PrimaryButton disabled={form.processing}>Criar</PrimaryButton>
                 </form>
             </FormShell>
@@ -59,10 +61,12 @@ export function LocationFields({
     form,
     currentBgUrl,
     onBgDelete,
+    campaignId,
 }: {
     form: ReturnType<typeof useForm<LocationFormData>>;
     currentBgUrl?: string | null;
     onBgDelete?: () => void;
+    campaignId: number;
 }) {
     const { data, setData, errors, progress } = form;
     const { features } = usePage<PageProps>().props;
@@ -101,6 +105,8 @@ export function LocationFields({
                 aiDisabled={!features.ai_images}
                 currentPreview={currentBgUrl ?? undefined}
                 onDelete={onBgDelete}
+                campaignId={campaignId}
+                galleryCategory="locations"
             />
             {progress && (
                 <progress value={progress.percentage} max={100} className="w-full" />

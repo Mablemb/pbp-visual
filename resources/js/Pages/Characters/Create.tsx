@@ -16,11 +16,12 @@ export interface CharFormData {
     strength: number; dexterity: number; constitution: number;
     intelligence: number; wisdom: number; charisma: number;
     bio: string;
-    portrait_source: '' | 'upload' | 'ai';
+    portrait_source: '' | 'upload' | 'ai' | 'existing';
     portrait: File | null;
     portrait_prompt: string;
     portrait_refs: File[];
     portrait_existing_refs: string[];
+    portrait_existing_path: string;
 }
 
 const ABILITY_KEYS: (keyof CharFormData)[] = [
@@ -33,12 +34,14 @@ export function CharacterForm({
     portraitUrl,
     submitLabel,
     onPortraitDelete,
+    campaignId,
 }: {
     initial: CharFormData;
     submit: (form: ReturnType<typeof useForm<CharFormData>>) => void;
     portraitUrl?: string;
     submitLabel: string;
     onPortraitDelete?: () => void;
+    campaignId: number;
 }) {
     const form = useForm<CharFormData>(initial);
     const { data, setData, errors, processing, progress } = form;
@@ -104,6 +107,8 @@ export function CharacterForm({
                 aiDisabled={!features.ai_images}
                 currentPreview={portraitUrl ?? null}
                 onDelete={onPortraitDelete}
+                campaignId={campaignId}
+                galleryCategory="players"
             />
             {progress && <progress value={progress.percentage} max={100} className="w-full" />}
 
@@ -155,9 +160,11 @@ export default function CharactersCreate({ campaign }: CreateProps) {
                             bio: '',
                             portrait_source: '', portrait: null,
                             portrait_prompt: '', portrait_refs: [], portrait_existing_refs: [],
+                            portrait_existing_path: '',
                         }}
                         submit={(form) => form.post(route('campaigns.characters.store', campaign.id), { forceFormData: true })}
                         submitLabel="Criar"
+                        campaignId={campaign.id}
                     />
                 </div>
             </div>

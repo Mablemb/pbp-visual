@@ -28,7 +28,7 @@ interface ImageGenerator
      *   existing_refs?: array<int, string>|null,
      *   size?: string|null
      * }  $input
-     * @param  string  $folder  e.g. "backgrounds", "sprites/12", "portraits"
+     * @param  string  $folder  e.g. "campaigns/12/npcs", "campaigns/12/locations"
      */
     public function acquire(array $input, string $folder): string;
 }

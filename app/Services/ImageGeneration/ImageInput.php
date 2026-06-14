@@ -10,11 +10,12 @@ use Illuminate\Http\Request;
  * "portrait") — the $field controls the form input names.
  *
  * Front-end is expected to submit:
- *   <field>_source     "upload" | "ai"
+ *   <field>_source     "upload" | "ai" | "existing"
  *   <field>            UploadedFile      (when source=upload)
  *   <field>_prompt     string            (when source=ai)
  *   <field>_refs[]     UploadedFile[]    (when source=ai, optional)
  *   <field>_existing_refs[] string[]     (when source=ai, optional — public-disk paths)
+ *   <field>_existing_path  string        (when source=existing — public-disk path to reuse)
  */
 class ImageInput
 {
@@ -26,7 +27,7 @@ class ImageInput
         $req = $required ? ['required'] : ['nullable'];
 
         return [
-            "{$field}_source" => array_merge($req, ['in:upload,ai']),
+            "{$field}_source" => array_merge($req, ['in:upload,ai,existing']),
             // Upload mode
             $field => ['nullable', 'image', 'max:5120', "required_if:{$field}_source,upload"],
             // AI mode
@@ -35,6 +36,8 @@ class ImageInput
             "{$field}_refs.*" => ['image', 'max:5120'],
             "{$field}_existing_refs" => ['nullable', 'array', 'max:'.self::MAX_REFS],
             "{$field}_existing_refs.*" => ['string'],
+            // Existing mode (reuse a cataloged path, no re-upload)
+            "{$field}_existing_path" => ['nullable', 'string', "required_if:{$field}_source,existing"],
         ];
     }
 
@@ -47,7 +50,7 @@ class ImageInput
     public static function fromRequest(Request $request, string $field): ?array
     {
         $source = $request->input("{$field}_source");
-        if (! in_array($source, ['upload', 'ai'], true)) {
+        if (! in_array($source, ['upload', 'ai', 'existing'], true)) {
             return null;
         }
 
@@ -55,9 +58,22 @@ class ImageInput
             if (! $request->hasFile($field)) {
                 return null;
             }
+
             return [
                 'source' => 'upload',
                 'upload' => $request->file($field),
+            ];
+        }
+
+        if ($source === 'existing') {
+            $path = (string) $request->input("{$field}_existing_path", '');
+            if ($path === '') {
+                return null;
+            }
+
+            return [
+                'source' => 'existing',
+                'path' => $path,
             ];
         }
 

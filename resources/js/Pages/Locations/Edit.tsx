@@ -20,6 +20,7 @@ export default function LocationsEdit({ campaign, location }: Props) {
         background_prompt: '',
         background_refs: [],
         background_existing_refs: [],
+        background_existing_path: '',
     });
 
     return (
@@ -51,6 +52,7 @@ export default function LocationsEdit({ campaign, location }: Props) {
                                 route('locations.background.destroy', location.id),
                                 { preserveScroll: true },
                             ) : undefined}
+                            campaignId={campaign.id}
                         />
                         <PrimaryButton disabled={form.processing}>Salvar</PrimaryButton>
                     </form>

@@ -1,18 +1,21 @@
 import { useState } from 'react';
 import AutoTextarea from '@/Components/AutoTextarea';
 import DeleteImageButton from '@/Components/DeleteImageButton';
+import ImageGalleryModal from '@/Components/ImageGalleryModal';
 import { asset } from '@/types/models';
 
 /**
- * Polymorphic image picker: lets the DM choose between uploading a file
- * or asking the AI to generate one (with a prompt + optional reference
- * images). Writes form-data fields with a configurable prefix:
+ * Polymorphic image picker: lets the user upload a file, ask the AI to generate
+ * one (prompt + optional references), or reuse an already-uploaded image from
+ * the campaign gallery (opens ImageGalleryModal). Writes form-data fields with a
+ * configurable prefix:
  *
- *   <field>_source       'upload' | 'ai'
+ *   <field>_source       'upload' | 'ai' | 'existing'
  *   <field>              File          (upload mode)
  *   <field>_prompt       string        (ai mode)
  *   <field>_refs         File[]        (ai mode, optional)
  *   <field>_existing_refs string[]     (ai mode, optional, public-disk paths)
+ *   <field>_existing_path string       (existing mode — chosen gallery path)
  *
  * Must be used inside a <form> using Inertia's useForm({ ..., forceFormData }).
  */
@@ -35,6 +38,9 @@ interface Props {
     currentPreview?: string | null;
     /** Called when the user confirms deleting the current image. */
     onDelete?: () => void;
+    /** Campaign + category enabling the "Galeria" reuse tab. */
+    campaignId?: number;
+    galleryCategory?: 'npcs' | 'players' | 'locations';
 }
 
 export default function ImageSourcePicker({
@@ -47,16 +53,22 @@ export default function ImageSourcePicker({
     existingRefs = [],
     currentPreview,
     onDelete,
+    campaignId,
+    galleryCategory,
 }: Props) {
     const sourceKey = `${field}_source`;
     const promptKey = `${field}_prompt`;
     const refsKey = `${field}_refs`;
     const existingKey = `${field}_existing_refs`;
+    const existingPathKey = `${field}_existing_path`;
 
+    const galleryEnabled = !!campaignId && !!galleryCategory;
     const source = (data[sourceKey] as string) || '';
+    const selectedPath = (data[existingPathKey] as string) || '';
     const [refPreviews, setRefPreviews] = useState<string[]>([]);
+    const [galleryOpen, setGalleryOpen] = useState(false);
 
-    function setSource(next: 'upload' | 'ai' | '') {
+    function setSource(next: 'upload' | 'ai' | 'existing' | '') {
         setData(sourceKey, next);
         // Clear opposite fields to avoid stale data being submitted.
         if (next !== 'upload') setData(field, null);
@@ -66,6 +78,9 @@ export default function ImageSourcePicker({
             setData(existingKey, []);
             setRefPreviews([]);
         }
+        if (next !== 'existing') setData(existingPathKey, '');
+        // Opening the gallery tab pops the picker immediately.
+        if (next === 'existing') setGalleryOpen(true);
     }
 
     function toggleExisting(path: string) {
@@ -112,6 +127,11 @@ export default function ImageSourcePicker({
                 >
                     Gerar com IA
                 </TabButton>
+                {galleryEnabled && (
+                    <TabButton active={source === 'existing'} onClick={() => setSource('existing')}>
+                        Galeria
+                    </TabButton>
+                )}
             </div>
 
             {source === 'upload' && (
@@ -123,6 +143,34 @@ export default function ImageSourcePicker({
                         className="block w-full text-sm"
                     />
                     {errors[field] && <p className="mt-1 text-xs text-red-600">{errors[field]}</p>}
+                </div>
+            )}
+
+            {source === 'existing' && (
+                <div className="flex items-center gap-3">
+                    {selectedPath ? (
+                        <img
+                            src={asset(selectedPath)}
+                            alt="selecionada"
+                            className="h-16 w-16 rounded border object-cover"
+                        />
+                    ) : (
+                        <div className="flex h-16 w-16 items-center justify-center rounded border border-dashed text-[10px] text-gray-400">
+                            nenhuma
+                        </div>
+                    )}
+                    <div>
+                        <button
+                            type="button"
+                            onClick={() => setGalleryOpen(true)}
+                            className="rounded bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-200"
+                        >
+                            {selectedPath ? 'Trocar imagem' : 'Escolher da galeria'}
+                        </button>
+                        {errors[existingPathKey] && (
+                            <p className="mt-1 text-xs text-red-600">{errors[existingPathKey]}</p>
+                        )}
+                    </div>
                 </div>
             )}
 
@@ -213,6 +261,20 @@ export default function ImageSourcePicker({
                         </div>
                     )}
                 </div>
+            )}
+
+            {galleryEnabled && (
+                <ImageGalleryModal
+                    show={galleryOpen}
+                    campaignId={campaignId!}
+                    defaultCategory={galleryCategory}
+                    selectedPath={selectedPath || undefined}
+                    onSelect={(img) => {
+                        setData(existingPathKey, img.path);
+                        setGalleryOpen(false);
+                    }}
+                    onClose={() => setGalleryOpen(false)}
+                />
             )}
         </div>
     );
